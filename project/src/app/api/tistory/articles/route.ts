@@ -9,36 +9,42 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const formattedFormData = formatFormData(formData);
 
-    // HTML 내용 추출 예시 (첫 번째 게시글)
+    // HTML 내용 추출 및 게시글 작성
     if (formattedFormData.length > 0) {
-      for (const [index, article] of formattedFormData.entries()) {
-        const articleData = await extractHtmlContent(article.htmlFile as File);
+      // Promise.all을 사용하여 모든 게시글을 병렬로 처리
+      const results = await Promise.all(
+        formattedFormData.map(async (article, index) => {
+          const articleData = await extractHtmlContent(article.htmlFile as File);
 
-        // 예시: WordPress에 게시글 작성
-        const postResult = await createArticle({
-          wpUrl: "https://roross.store",
-          wpId: "tome2025",
-          applicationPassword: "G2qT aAyC Bjwz cE8B stuf XQwZ",
-          articleData: articleData as ArticleDataType,
-        });
+          // 예시: WordPress에 게시글 작성
+          const postResult = await createArticle({
+            wpUrl: "https://roross.store",
+            wpId: "tome2025",
+            applicationPassword: "G2qT aAyC Bjwz cE8B stuf XQwZ",
+            articleData: articleData as ArticleDataType,
+          });
 
-        console.log(`${index + 1}번째 게시글 작성 결과:`, postResult ? "성공" : "실패");
-      }
+          console.log(`${index + 1}번째 게시글 작성 결과:`, postResult ? "성공" : "실패");
+          return { index: index + 1, result: postResult };
+        })
+      );
+
+      // 성공 응답 반환
+      return NextResponse.json(
+        {
+          data: results,
+          error: null,
+        },
+        { status: 200 }
+      );
     }
-
-    // 성공 응답 반환
-    return NextResponse.json(
-      {
-        success: true,
-      },
-      { status: 200 }
-    );
-  } catch {
-    console.error("POST() : 라우트 핸들러 중 오류");
+  } catch (error) {
+    console.error("POST() : 라우트 핸들러 중 오류", error);
 
     return NextResponse.json(
       {
-        success: false,
+        data: null,
+        error: error,
       },
       { status: 500 }
     );
@@ -50,8 +56,9 @@ type ArticleDataType = {
   title: string;
   content: string;
   status: string;
-  categories: string[];
-  tags: string[];
+  categories?: string[];
+  tags?: string[];
+  date?: string;
 };
 
 //////////////////////////////////////// 함수 ////////////////////////////////////////
@@ -111,18 +118,20 @@ async function extractHtmlContent(htmlFile: File) {
     const textDecoder = new TextDecoder("utf-8");
     const htmlContent = textDecoder.decode(arrayBuffer);
 
+
     // Cheerio로 HTML 파싱
     const $ = cheerio.load(htmlContent);
 
     // 제목 추출 (첫 번째 h1 또는 title 태그)
     const title = $(".title-article").text().trim() || "";
-
     const body = $(".article-view").html() || "";
+    const date = $(".date").text().trim() || "";
 
     const articleData = {
       title,
       content: body || "",
       status: "publish",
+      date,
     };
 
     // 이미지 경로 수정 (상대 경로를 절대 경로로 변환하는 등의 작업)
