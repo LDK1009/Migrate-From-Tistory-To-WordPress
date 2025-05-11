@@ -1,9 +1,8 @@
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState } from "react";
-import { TistoryArticle } from "@/types/tistory";
 import api from "@/lib/apiClient";
-
+import { TistoryArticleType } from "@/types/tistory";
 const InputSection = () => {
   //////////////////////////////////////// 상태 ////////////////////////////////////////
 
@@ -42,7 +41,7 @@ const InputSection = () => {
   // 파일 포맷팅
   function formatFiles(files: FileList) {
     console.log("포맷팅 전", files);
-    const articles: TistoryArticle[] = [];
+    const articles: TistoryArticleType[] = [];
 
     for (const file of files) {
       const pathParts = file.webkitRelativePath.split("/");
@@ -88,7 +87,7 @@ const InputSection = () => {
       }
 
       // 각 게시글의 이미지 파일 추가
-      article.images?.forEach((img, imgIndex) => {
+      article.images?.forEach((img: File, imgIndex: number) => {
         formData.append(`image_${article.articleNumber}_${imgIndex}`, img);
       });
     });
@@ -107,7 +106,6 @@ const InputSection = () => {
     }
   }
 
-  
   //////////////////////////////////////// 렌더링 ////////////////////////////////////////
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>

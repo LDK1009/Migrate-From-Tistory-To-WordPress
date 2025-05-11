@@ -1,11 +1,11 @@
 import api from "@/lib/apiClient";
-import { TistoryArticle } from "@/types/tistory";
+import { TistoryArticleType } from "@/types/tistory";
 import { create } from "zustand";
 
 interface TistoryStore {
-  tistoryData: TistoryArticle[];
+  tistoryData: TistoryArticleType[];
 
-  setTistoryData: (data: TistoryArticle[]) => void;
+  setTistoryData: (data: TistoryArticleType[]) => void;
   fetchTistoryData: (files : FileList) => Promise<void>;
 }
 
@@ -13,7 +13,7 @@ export const useTistoryStore = create<TistoryStore>((set) => ({
   tistoryData: [],
 
   // 티스토리 데이터 가져오기
-  setTistoryData: (data: TistoryArticle[]) => {
+  setTistoryData: (data: TistoryArticleType[]) => {
     set({ tistoryData: data });
   },
   fetchTistoryData: async (files: FileList) => {
