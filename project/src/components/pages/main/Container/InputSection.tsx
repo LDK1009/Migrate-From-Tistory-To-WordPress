@@ -81,12 +81,6 @@ const InputSection = () => {
     // FormData 객체 생성
     const formData = new FormData();
 
-    // tistoryData 정보 추가 (파일 제외)
-    const tistoryInfo = tistoryData.map((article) => ({
-      articleNumber: article.articleNumber,
-    }));
-    formData.append("info", JSON.stringify(tistoryInfo));
-
     // 각 게시글의 HTML 파일 추가
     tistoryData.forEach((article) => {
       if (article.htmlFile) {
