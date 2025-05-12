@@ -69,7 +69,7 @@ export async function extractHtmlContent(article: TistoryArticleType, blogUrl: s
     const mediaBaseUrl = getMediaBaseUrl(blogUrl);
 
     // 전처리된 HTML 문자열
-    const preprocessedHtml = preprocessHtml(article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
+    const preprocessedHtml = preprocessHtml(article, article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
 
     // HTML 파싱
     const $ = cheerio.load(preprocessedHtml);
@@ -96,7 +96,13 @@ export async function extractHtmlContent(article: TistoryArticleType, blogUrl: s
 }
 
 ////////// 이미지 태그 src 속성값 변경
-export function preprocessHtml(articleNumber: number, articleTitle: string, htmlString: string, mediaBaseUrl: string) {
+export function preprocessHtml(
+  article: TistoryArticleType,
+  articleNumber: number,
+  articleTitle: string,
+  htmlString: string,
+  mediaBaseUrl: string
+) {
   try {
     // Cheerio로 HTML 파싱
     const $ = cheerio.load(htmlString);
@@ -106,8 +112,25 @@ export function preprocessHtml(articleNumber: number, articleTitle: string, html
     const images =
       $("img")
         .map((idx, el) => {
+          const existingSrc = $(el)?.attr("src")?.split("/").pop();
+
+          let fileSize;
+          let extension;
+
+          article.images?.map((file) => {
+            if (file.name.includes(existingSrc as string)) {
+              fileSize = (file.size / Math.pow(1024, 2)).toFixed(2);
+            }
+          });
+
+          if (fileSize && fileSize > 1) {
+            extension = "jpeg";
+          } else {
+            extension = "png";
+          }
+
           // src 변경
-          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.png`);
+          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.${extension}`);
 
           // 변경된 src 반환
           return $(el)?.attr("src");

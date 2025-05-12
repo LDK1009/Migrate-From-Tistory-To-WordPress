@@ -25,11 +25,11 @@ export async function POST(req: NextRequest) {
             wpUrl: "https://roross.store",
             wpId: "tome2025",
             applicationPassword: "G2qT aAyC Bjwz cE8B stuf XQwZ",
-            article : article,
+            article: article,
             articleHtml: articleHtml as ArticleHtmlType,
             articleImages: article.images as File[],
           });
-          
+
           return { index: index + 1, result: postResult };
         })
       );
