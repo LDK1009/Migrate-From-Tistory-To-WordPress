@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ArticleDataType } from "@/types/tistory";
-import {
-  changeImageTagSrc,
-  createArticle,
-  extractHtmlContent,
-  formatFormData,
-} from "../../../../utils/api/tistory/articles/util";
+import { ArticleHtmlType, TistoryArticleType } from "@/types/tistory";
+import { createArticle, extractHtmlContent, formatFormData } from "../../../../utils/api/tistory/articles/util";
 
 //////////////////////////////////////// 라우트 핸들러 ////////////////////////////////////////
 export async function POST(req: NextRequest) {
@@ -14,27 +9,26 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     // 폼 데이터 포맷팅
     const formattedFormData = formatFormData(formData);
+    // 블로그 주소
+    const blogUrl = "https://roross.store";
 
     // 폼데이터 존재 여부 확인
-    if (formattedFormData.length > 0) {
+    if (formattedFormData && formattedFormData.length > 0) {
       // HTML 추출, 이미지 태그 src 변경, 이미지 이름 변경, 워드프레스 게시글 작성
       const results = await Promise.all(
-        formattedFormData.map(async (article, index) => {
+        formattedFormData.map(async (article: TistoryArticleType, index: number) => {
           // HTML 추출
-          const articleData = await extractHtmlContent(article.htmlFile as File);
-          // 이미지 태그 src 변경
-          await changeImageTagSrc(article.articleNumber, article.htmlFile as File);
+          const articleHtml = await extractHtmlContent(article, blogUrl);
 
           // 예시: WordPress에 게시글 작성
           const postResult = await createArticle({
             wpUrl: "https://roross.store",
             wpId: "tome2025",
             applicationPassword: "G2qT aAyC Bjwz cE8B stuf XQwZ",
-            articleData: articleData as ArticleDataType,
+            articleHtml: articleHtml as ArticleHtmlType,
             articleImages: article.images as File[],
           });
 
-          console.log(`${index + 1}번째 게시글 작성 결과:`, postResult ? "성공" : "실패");
           return { index: index + 1, result: postResult };
         })
       );

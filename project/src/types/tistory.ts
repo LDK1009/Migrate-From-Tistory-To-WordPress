@@ -1,4 +1,4 @@
-export type ArticleDataType = {
+export type ArticleHtmlType = {
   title: string;
   content: string;
   status: string;

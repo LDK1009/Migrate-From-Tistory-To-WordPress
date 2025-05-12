@@ -10,8 +10,6 @@ const InputSection = () => {
   const { tistoryData, setTistoryData } = useTistoryStore();
   // 워드프레스 URL 입력
   const [wordpressUrl, setWordpressUrl] = useState("");
-  // 폴더 이름
-  const [folderName, setFolderName] = useState<string>("");
 
   //////////////////////////////////////// 훅 ////////////////////////////////////////
   // 폴더 선택 입력 참조
@@ -27,24 +25,17 @@ const InputSection = () => {
 
       // 선택된 파일 목록 업데이트
       setTistoryData(formattedFiles);
-
-      ///// 폴더 이름 상태 업데이트
-      // 폴더 이름 추출 (첫 번째 파일의 경로에서)
-      const firstFile = e.target.files[0];
-      // 폴더 이름 추출 (첫 번째 파일의 경로에서)
-      const folderPath = firstFile.webkitRelativePath.split("/");
-      // 폴더 이름 업데이트
-      setFolderName(folderPath[0]);
     }
   };
 
   // 파일 포맷팅
   function formatFiles(files: FileList) {
-    console.log("포맷팅 전", files);
     const articles: TistoryArticleType[] = [];
 
     for (const file of files) {
+      // 파일 경로 분리
       const pathParts = file.webkitRelativePath.split("/");
+      // 게시글 번호 추출
       const articleNumber = Number(pathParts[1]);
 
       // 아티클 번호에 해당하는 게시글 찾기
@@ -71,7 +62,6 @@ const InputSection = () => {
       }
     }
 
-    console.log("포맷팅 후", articles);
     return articles;
   }
 
@@ -128,7 +118,7 @@ const InputSection = () => {
             style={{ display: "none" }}
             {...{ webkitdirectory: "", directory: "" }}
           />
-          <Typography>{tistoryData ? `${folderName} (${tistoryData.length}개 파일)` : "선택된 폴더 없음"}</Typography>
+          <Typography>{tistoryData ? `(${tistoryData.length}개 파일)` : "선택된 폴더 없음"}</Typography>
         </Box>
       </Box>
 
