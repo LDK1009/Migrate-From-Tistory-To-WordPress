@@ -8,7 +8,6 @@ export async function GET() {
 
   try {
     // 프록시 API를 통해 요청
-    console.log("작업 시작");
     const apiUrl = `https://roross.store/wp-json/wp/v2/posts`;
 
     const response = await axios.get(apiUrl);

@@ -15,8 +15,6 @@ export function formatFormData(formData: FormData) {
 
     // 폼데이터 포맷팅
     for (const [key, value] of formData.entries()) {
-      // console.log("포맷팅 전 폼데이터", formData);
-
       // 게시글 번호 추출
       const articleNumber = Number(key.split("_")[1]);
 
@@ -52,7 +50,6 @@ export function formatFormData(formData: FormData) {
       }
     }
 
-    // console.log("포맷팅된 폼데이터", articles);
     return articles;
   } catch (error) {
     throw error;
@@ -73,8 +70,6 @@ export async function extractHtmlContent(article: TistoryArticleType, blogUrl: s
 
     // 전처리된 HTML 문자열
     const preprocessedHtml = preprocessHtml(article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
-
-    // console.log("전처리된 HTML 문자열", preprocessedHtml);
 
     // HTML 파싱
     const $ = cheerio.load(preprocessedHtml);
@@ -107,23 +102,135 @@ export function preprocessHtml(articleNumber: number, articleTitle: string, html
     const $ = cheerio.load(htmlString);
 
     // 이미지 태그의 src 속성 변경
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const images =
       $("img")
         .map((idx, el) => {
           // src 변경
-          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}`);
-          // 변경 후 src
-          const changedSrc = $(el)?.attr("src");
-          // 변경 후 src 반환
-          return changedSrc;
+          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.png`);
+
+          // 변경된 src 반환
+          return $(el)?.attr("src");
         })
         // 배열로 반환
         .get()
         // falsy한 요소 제거
         .filter(Boolean) || [];
 
-    // console.log("이미지 태그 src 속성값 변경 결과", images);
     return $.html();
+  } catch (error) {
+    throw error;
+  }
+}
+
+////////// 워드프레스 게시글 작성 함수 인수 타입
+type CreateArticleType = {
+  wpUrl: string;
+  wpId: string;
+  applicationPassword: string;
+  article: TistoryArticleType;
+  articleHtml: ArticleHtmlType;
+  articleImages: File[];
+};
+
+////////// 워드프레스 게시글 작성 함수
+export async function createArticle({
+  wpUrl,
+  wpId,
+  applicationPassword,
+  article,
+  articleHtml,
+  articleImages,
+}: CreateArticleType) {
+  try {
+    // 사용자 이름과 애플리케이션 비밀번호로 Basic 인증 헤더 생성
+    const username = wpId;
+    // 애플리케이션 비밀번호 추출
+    const appPassword = applicationPassword;
+    // Basic 인증 헤더 생성
+    const basicAuth = "Basic " + Buffer.from(`${username}:${appPassword}`).toString("base64");
+
+    // 요청 바디 설정
+    const axiosBody = articleHtml;
+
+    // 요청 헤더 설정
+    const axiosConfig = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: basicAuth,
+      },
+    };
+
+    // 게시글 업로드
+    const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
+
+    // 이미지 업로드 처리
+    if (articleImages && articleImages.length > 0) {
+      await Promise.all(
+        articleImages.map(async (image, index) => {
+          const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
+          return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
+        })
+      );
+    }
+    return response.data; // 생성된 글 정보 반환
+  } catch (error) {
+    console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
+    throw error;
+  }
+}
+
+////////// 워드프레스 이미지 업로드 함수
+export async function uploadImageToWordPress(
+  wpUrl: string,
+  authHeader: string,
+  imageFile: File,
+  uploadImageFileName: string
+) {
+  try {
+    // 이미지 파일 -> 바이너리 데이터
+    const arrayBuffer = await imageFile.arrayBuffer();
+
+    // 바이너리 데이터 -> 버퍼 객체
+    const buffer = Buffer.from(arrayBuffer);
+
+    // 버퍼 객체 -> 블롭 객체
+    const blob = new Blob([buffer], { type: imageFile.type });
+
+    // 이미지 파일 업로드 요청 바디 설정
+    const formData = new FormData();
+    formData.append("file", blob, uploadImageFileName);
+
+    // 이미지 파일 업로드 요청
+    const result = await axios.post(`${wpUrl}/wp-json/wp/v2/media`, formData, {
+      headers: {
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(uploadImageFileName)}"`,
+        "Content-Type": "multipart/form-data",
+        Authorization: authHeader,
+      },
+    });
+
+    return {
+      data: result,
+      error: null,
+    };
+  } catch (error) {
+    console.error("uploadImageToWordPress() : 이미지 업로드 중 오류", error);
+    throw error;
+  }
+}
+
+////////// HTML 파일 -> 문자열로 변경
+export async function htmlFileToString(htmlFile: File) {
+  try {
+    // 데이터 형식 변환(파일 객체 -> 바이너리)
+    const arrayBuffer = await htmlFile.arrayBuffer();
+    // utf-8 디코더 객체 생성
+    const textDecoder = new TextDecoder("utf-8");
+    // 데이터 형식 변환(바이너리 -> 문자열)
+    const htmlString = textDecoder.decode(arrayBuffer);
+
+    return htmlString;
   } catch (error) {
     throw error;
   }
@@ -164,124 +271,17 @@ export function changeFileName(file: File, nextFileName: string) {
   }
 }
 
-////////// 워드프레스 게시글 작성 함수 인수 타입
-type CreateArticleType = {
-  wpUrl: string;
-  wpId: string;
-  applicationPassword: string;
-  articleHtml: ArticleHtmlType;
-  articleImages: File[];
-};
-
-////////// 워드프레스 게시글 작성 함수
-export async function createArticle({
-  wpUrl,
-  wpId,
-  applicationPassword,
-  articleHtml,
-  articleImages,
-}: CreateArticleType) {
-  try {
-    // 사용자 이름과 애플리케이션 비밀번호로 Basic 인증 헤더 생성
-    const username = wpId;
-    // 애플리케이션 비밀번호 추출
-    const appPassword = applicationPassword;
-    // Basic 인증 헤더 생성
-    const basicAuth = "Basic " + Buffer.from(`${username}:${appPassword}`).toString("base64");
-
-    // 요청 바디 설정
-    const axiosBody = articleHtml;
-
-    // 요청 헤더 설정
-    const axiosConfig = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: basicAuth,
-      },
-    };
-
-    // 게시글 업로드
-    const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
-
-    // 이미지 업로드 처리
-    if (articleImages && articleImages.length > 0) {
-      await Promise.all(
-        articleImages.map(async (image) => {
-          return await uploadImageToWordPress(wpUrl, basicAuth, image);
-        })
-      );
-    }
-
-    return response.data; // 생성된 글 정보 반환
-  } catch (error) {
-    console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
-    throw error;
-  }
-}
-
-////////// 워드프레스 이미지 업로드 함수
-export async function uploadImageToWordPress(wpUrl: string, authHeader: string, imageFile: File) {
-  try {
-    // 이미지 파일 -> 바이너리 데이터
-    const arrayBuffer = await imageFile.arrayBuffer();
-    // 바이너리 데이터 -> 버퍼 객체
-    const buffer = Buffer.from(arrayBuffer);
-    // 버퍼 객체 -> 블롭 객체
-    const blob = new Blob([buffer], { type: imageFile.type });
-
-    // 이미지 파일 업로드 요청 바디 설정
-    const formData = new FormData();
-
-    // 이미지 파일 추가
-    formData.append("file", blob, imageFile.name);
-
-    console.log("업로드될 이미지 파일명", imageFile.name);
-    // console.log("이미지 파일 업로드 요청 바디", formData);
-    // 이미지 파일 업로드 요청
-    const result = await axios.post(`${wpUrl}/wp-json/wp/v2/media`, formData, {
-      headers: {
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(imageFile.name)}"`,
-        "Content-Type": "multipart/form-data",
-        Authorization: authHeader,
-      },
-    });
-
-    return {
-      data: result,
-      error: null,
-    };
-  } catch (error) {
-    console.error("uploadImageToWordPress() : 이미지 업로드 중 오류", error);
-    throw error;
-  }
-}
-
 ////////// 미디어 기본 주소 추출
 export function getMediaBaseUrl(blogUrl: string) {
   // 현재 날짜 객체 생성
   const now = new Date();
-
   // 년도 얻기 (4자리 숫자)
   const year = now.getFullYear();
-
   // 월 얻기 (0-11 범위의 숫자, 0은 1월, 11은 12월)
-  const month = now.getMonth() + 1;
+  const month = (now.getMonth() + 1).toString().padStart(2, "0");
 
-  return `${blogUrl}/wp-content/uploads/${year}/${month}`;
-}
+  // 미디어 기본 주소 생성
+  const mediaBaseUrl = `${blogUrl.replace("https", "http")}/wp-content/uploads/${year}/${month}`;
 
-////////// HTML 파일 -> 문자열로 변경
-export async function htmlFileToString(htmlFile: File) {
-  try {
-    // 데이터 형식 변환(파일 객체 -> 바이너리)
-    const arrayBuffer = await htmlFile.arrayBuffer();
-    // utf-8 디코더 객체 생성
-    const textDecoder = new TextDecoder("utf-8");
-    // 데이터 형식 변환(바이너리 -> 문자열)
-    const htmlString = textDecoder.decode(arrayBuffer);
-
-    return htmlString;
-  } catch (error) {
-    throw error;
-  }
+  return mediaBaseUrl;
 }
