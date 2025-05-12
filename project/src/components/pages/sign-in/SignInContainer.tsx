@@ -6,7 +6,7 @@ import { CottageOutlined } from "@mui/icons-material";
 import { enqueueSnackbar } from "notistack";
 
 import { signIn } from "@/service/auth";
-import { mixinFlex, mixinBorderRadius, mixinContainer, mixinFontColor, mixinMuiButtonNoShadow } from "@/styles/mixins";
+import { mixinFlex, mixinBorderRadius, mixinContainer, mixinMuiButtonNoShadow } from "@/styles/mixins";
 
 /**
  * 로그인 페이지 컨테이너 컴포넌트
@@ -76,13 +76,9 @@ const TextWrap = styled("div")`
   margin-bottom: 8px;
 `;
 
-const HeadingText = styled(Typography)(({ theme }) => ({
-  ...mixinFontColor(theme, "black"),
-}));
+const HeadingText = styled(Typography)``;
 
-const BodyText = styled(Typography)(({ theme }) => ({
-  ...mixinFontColor(theme, "gray"),
-}));
+const BodyText = styled(Typography)``;
 
 const LogoImage = styled(Image)`
   ${mixinBorderRadius("medium")};
@@ -112,7 +108,6 @@ const KakaoButton = styled(Button)`
   width: 100%;
   height: 48px;
   background-color: #fee500;
-  ${({ theme }) => mixinFontColor(theme, "black")};
   font-weight: 500;
   text-transform: none;
 

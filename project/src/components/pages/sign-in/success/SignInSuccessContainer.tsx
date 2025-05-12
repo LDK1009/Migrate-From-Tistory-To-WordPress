@@ -1,6 +1,6 @@
 "use client";
 
-import { mixinBorderRadius, mixinContainer, mixinFlex, mixinFontColor, mixinMuiButtonNoShadow } from "@/styles/mixins";
+import { mixinBorderRadius, mixinContainer, mixinFlex, mixinMuiButtonNoShadow } from "@/styles/mixins";
 import { Button, styled, Typography } from "@mui/material";
 import Image from "next/image";
 import React, { useEffect } from "react";
@@ -72,13 +72,9 @@ const TextWrap = styled("div")`
   row-gap: 8px;
 `;
 
-const HeadingText = styled(Typography)`
-  ${({ theme }) => mixinFontColor(theme, "black")};
-`;
+const HeadingText = styled(Typography)``;
 
-const BodyText = styled(Typography)`
-  ${({ theme }) => mixinFontColor(theme, "gray")};
-`;
+const BodyText = styled(Typography)``;
 
 const Img = styled(Image)`
   ${mixinBorderRadius("medium")};
