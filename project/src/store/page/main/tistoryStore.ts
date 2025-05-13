@@ -1,32 +1,57 @@
-import api from "@/lib/apiClient";
 import { TistoryArticleType } from "@/types/tistory";
 import { create } from "zustand";
 
+//////////////////////////////////////// 스토어 타입 ////////////////////////////////////////
 interface TistoryStore {
-  tistoryData: TistoryArticleType[];
+  tistoryArticles: TistoryArticleType[];
 
-  setTistoryData: (data: TistoryArticleType[]) => void;
-  fetchTistoryData: (files : FileList) => Promise<void>;
+  setTistoryArticles: (files: FileList) => void;
 }
 
+//////////////////////////////////////// 스토어 ////////////////////////////////////////
 export const useTistoryStore = create<TistoryStore>((set) => ({
-  tistoryData: [],
+  tistoryArticles: [],
 
   // 티스토리 데이터 가져오기
-  setTistoryData: (data: TistoryArticleType[]) => {
-    set({ tistoryData: data });
-  },
-  fetchTistoryData: async (files: FileList) => {
-    const response = await api.post("/tistory/articles", {
-      files: files,
-    });
-
-    const { data, error } = await response.data;
-
-    if (error) {
-      return;
-    }
-
-    set({ tistoryData: data });
+  setTistoryArticles: (files: FileList) => {
+    set({ tistoryArticles: formatFiles(files) });
   },
 }));
+
+//////////////////////////////////////// 모듈 ////////////////////////////////////////
+// 파일 포맷팅
+function formatFiles(files: FileList) {
+  const articles: TistoryArticleType[] = [];
+
+  for (const file of files) {
+    // 파일 경로 분리
+    const pathParts = file.webkitRelativePath.split("/");
+    // 게시글 번호 추출
+    const articleNumber = Number(pathParts[1]);
+
+    // 아티클 번호에 해당하는 게시글 찾기
+    let article = articles.find((el) => el.articleNumber === articleNumber);
+
+    // 게시글 객체가 없다면 생성
+    if (!article) {
+      article = {
+        articleNumber: articleNumber,
+        images: [],
+        htmlFile: null,
+      };
+      articles.push(article);
+    }
+
+    // 아티클에 html 파일 추가
+    if (file.type.includes("html")) {
+      article.htmlFile = file;
+    }
+
+    // 아티클에 이미지 파일 추가
+    if (file.type.includes("image")) {
+      article.images?.push(file);
+    }
+  }
+
+  return articles;
+}

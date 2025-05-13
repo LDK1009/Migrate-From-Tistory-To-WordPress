@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ArticleHtmlType, TistoryArticleType } from "@/types/tistory";
-import { createArticle, extractHtmlContent, formatFormData } from "../../../../utils/api/tistory/articles/util";
+import { createArticle, extractHtmlContent, formatFormData } from "../../../utils/api/tistory/articles/util";
 
 //////////////////////////////////////// 라우트 핸들러 ////////////////////////////////////////
 export async function POST(req: NextRequest) {

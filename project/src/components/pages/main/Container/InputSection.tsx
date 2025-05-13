@@ -1,161 +1,221 @@
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { TextField, Button, Typography, Box, Paper } from "@mui/material";
-import React, { useRef, useState } from "react";
-import api from "@/lib/apiClient";
-import { TistoryArticleType } from "@/types/tistory";
+import React, { useRef, useState, useEffect } from "react";
+import { enqueueSnackbar } from "notistack";
+import TistoryArticlePreview from "./TistoryArticlePreview";
+import { createArticleList } from "@/service/bucket/articles";
+import { useWordpressStore } from "@/store/page/main/wordpressStore";
+
 const InputSection = () => {
   //////////////////////////////////////// 상태 ////////////////////////////////////////
 
-  // 티스토리 데이터
-  const { tistoryData, setTistoryData } = useTistoryStore();
-  // 워드프레스 URL 입력
-  const [wordpressUrl, setWordpressUrl] = useState("");
+  // 티스토리 스토어
+  const { tistoryArticles, setTistoryArticles } = useTistoryStore();
+
+  // 워드프레스 스토어
+  const { wpUrl, wpId, wpApplicationPw, setWpUrl, setWpId, setWpApplicationPw } = useWordpressStore();
+
+  // URL 유효성 상태
+  const [urlError, setUrlError] = useState<boolean>(false);
+  const [urlHelperText, setUrlHelperText] = useState<string>("");
+
+  // 마이그레이션 상태
+  const [isMigrating, setIsMigrating] = useState<boolean>(false);
 
   //////////////////////////////////////// 훅 ////////////////////////////////////////
-  // 폴더 선택 입력 참조
+  // 폴더 선택기 참조
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  //////////////////////////////////////// 함수 ////////////////////////////////////////
-  // 폴더 선택 이벤트 핸들러
-  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      ///// 파일 포맷팅 및 상태 업데이트
-      // 파일 포맷팅
-      const formattedFiles = formatFiles(e.target.files);
+  // URL 유효성 검사 실행
+  useEffect(() => {
+    isValidWpUrl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wpUrl]);
 
-      // 선택된 파일 목록 업데이트
-      setTistoryData(formattedFiles);
+  //////////////////////////////////////// 함수 ////////////////////////////////////////
+  // URL 유효성 검사 함수
+  const isValidWpUrl = (): boolean => {
+    // http:// 또는 https://로 시작하고, 마지막에 슬래시(/)가 없는 URL만 허용
+    const urlPattern = /^(https?:\/\/)[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+
+    const isValid = urlPattern.test(wpUrl);
+
+    if (wpUrl) {
+      if (wpUrl.endsWith("/")) {
+        setWpUrl(wpUrl.slice(0, -1));
+      }
+
+      setUrlError(!isValid);
+      setUrlHelperText(isValid ? "" : "올바른 URL 형식이 아닙니다");
+    } else {
+      setUrlError(false);
+      setUrlHelperText("");
     }
+
+    return isValid;
   };
 
-  // 파일 포맷팅
-  function formatFiles(files: FileList) {
-    const articles: TistoryArticleType[] = [];
-
-    for (const file of files) {
-      // 파일 경로 분리
-      const pathParts = file.webkitRelativePath.split("/");
-      // 게시글 번호 추출
-      const articleNumber = Number(pathParts[1]);
-
-      // 아티클 번호에 해당하는 게시글 찾기
-      let article = articles.find((el) => el.articleNumber === articleNumber);
-
-      // 게시글 객체가 없다면 생성
-      if (!article) {
-        article = {
-          articleNumber: articleNumber,
-          images: [],
-          htmlFile: null,
-        };
-        articles.push(article);
-      }
-
-      // 아티클에 html 파일 추가
-      if (file.type.includes("html")) {
-        article.htmlFile = file;
-      }
-
-      // 아티클에 이미지 파일 추가
-      if (file.type.includes("image")) {
-        article.images?.push(file);
-      }
+  // 폴더 선택 이벤트 핸들러
+  const selectFolder = (files: FileList | null) => {
+    if (!files) {
+      enqueueSnackbar("폴더를 선택해주세요.", {
+        variant: "error",
+      });
+      return;
     }
 
-    return articles;
-  }
+    setTistoryArticles(files);
+  };
 
   // 티스토리 데이터 가져오기
-  async function handleSubmit() {
-    // FormData 객체 생성
-    const formData = new FormData();
+  // async function handleSubmit() {
+  //   // FormData 객체 생성
+  //   const formData = new FormData();
 
-    // 각 게시글의 HTML 파일 추가
-    tistoryData.forEach((article) => {
-      if (article.htmlFile) {
-        formData.append(`html_${article.articleNumber}`, article.htmlFile);
-      }
+  //   // 각 게시글의 HTML 파일 추가
+  //   tistoryArticles.forEach((article) => {
+  //     if (article.htmlFile) {
+  //       formData.append(`html_${article.articleNumber}`, article.htmlFile);
+  //     }
 
-      // 각 게시글의 이미지 파일 추가
-      article.images?.forEach((img: File, imgIndex: number) => {
-        formData.append(`image_${article.articleNumber}_${imgIndex}`, img);
-      });
-    });
+  //     // 각 게시글의 이미지 파일 추가
+  //     article.images?.forEach((img: File, imgIndex: number) => {
+  //       formData.append(`image_${article.articleNumber}_${imgIndex}`, img);
+  //     });
+  //   });
 
-    // FormData를 사용하여 API 요청
-    const response = await api.post("/tistory/articles", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+  //   // FormData를 사용하여 API 요청
+  //   const response = await api.post("/tistory/articles", formData, {
+  //     headers: {
+  //       "Content-Type": "multipart/form-data",
+  //     },
+  //   });
 
-    if (response.status === 200) {
-      alert("티스토리 데이터 가져오기 성공");
-    } else {
-      alert("티스토리 데이터 가져오기 실패");
+  //   if (response.status === 200) {
+  //     alert("티스토리 데이터 가져오기 성공");
+  //   } else {
+  //     alert("티스토리 데이터 가져오기 실패");
+  //   }
+  // }
+
+  ////////// 마이그레이션 버튼 클릭
+  async function handleMoveArticles() {
+    // 마이그레이션 상태 설정
+    setIsMigrating(true);
+
+    // 마이그레이션 조건 확인
+    if (!migrateCheck()) {
+      return;
     }
+
+    // 파일 업로드
+    const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+
+    // 티스토리 데이터 가져오기 실패
+    if (createArticleError) {
+      enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+      return;
+    }
+
+    // 마이그레이션 상태 초기화
+    setIsMigrating(false);
+  }
+
+  ////////// 마이그레이션 조건 확인
+  function migrateCheck() {
+    if (!wpUrl || !wpId || !wpApplicationPw) {
+      enqueueSnackbar("모든 정보를 입력해주세요.", { variant: "error" });
+      return false;
+    }
+
+    if (urlError) {
+      enqueueSnackbar("올바른 워드프레스 URL을 입력해주세요.", { variant: "error" });
+      return false;
+    }
+
+    if (!tistoryArticles || tistoryArticles.length === 0) {
+      enqueueSnackbar("티스토리 백업 폴더에 데이터가 없습니다.", { variant: "error" });
+      return false;
+    }
+
+    return true;
   }
 
   //////////////////////////////////////// 렌더링 ////////////////////////////////////////
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        티스토리 마이그레이션
-      </Typography>
-
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          1. 티스토리 백업 폴더 선택
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Button variant="outlined" onClick={() => fileInputRef.current?.click()} sx={{ mr: 2 }}>
-            폴더 선택
-          </Button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFolderSelect}
-            style={{ display: "none" }}
-            {...{ webkitdirectory: "", directory: "" }}
-          />
-          <Typography>{tistoryData ? `(${tistoryData.length}개 파일)` : "선택된 폴더 없음"}</Typography>
-        </Box>
-      </Box>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          2. 워드프레스 URL 입력 (선택사항)
-        </Typography>
-        <TextField
-          label="WordPress URL"
-          fullWidth
-          value={wordpressUrl}
-          onChange={(e) => setWordpressUrl(e.target.value)}
-          placeholder="https://your-wordpress-site.com"
-          sx={{ mb: 2 }}
+      <h1>{isMigrating && "마이그레이션 중..."}</h1>
+      {/* 폴더 선택 */}
+      <div>
+        <Typography>{tistoryArticles ? `(${tistoryArticles.length}개 파일)` : "선택된 폴더 없음"}</Typography>
+        <Button variant="outlined" onClick={() => fileInputRef.current?.click()} sx={{ mr: 2 }}>
+          폴더 선택
+        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={(e) => selectFolder(e.target.files as FileList)}
+          style={{ display: "none" }}
+          {...{ webkitdirectory: "", directory: "" }}
         />
-      </Box>
+      </div>
 
-      <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!tistoryData} fullWidth>
-        티스토리 데이터 가져오기
+      {/* 워드프레스 id 입력 */}
+      <TextField
+        label="워드프레스 아이디"
+        fullWidth
+        value={wpId}
+        onChange={(e) => setWpId(e.target.value)}
+        placeholder="https://your-wordpress-site.com"
+        sx={{ mb: 2 }}
+      />
+
+      {/* 응용 프로그램 비밀번호 입력 */}
+      <TextField
+        label="응용 프로그램 비밀번호"
+        fullWidth
+        value={wpApplicationPw}
+        onChange={(e) => setWpApplicationPw(e.target.value)}
+        placeholder="https://your-wordpress-site.com"
+        sx={{ mb: 2 }}
+      />
+      <Button
+        variant="outlined"
+        onClick={() => {
+          if (wpUrl) {
+            window.open(`${wpUrl}/wp-admin/profile.php`, "_blank");
+          } else {
+            enqueueSnackbar("워드프레스 URL을 입력해주세요.", { variant: "error" });
+          }
+        }}
+      >
+        응용 프로그램 비밀번호 발급 방법
       </Button>
 
-      {tistoryData && tistoryData?.length > 0 && (
+      {/* 워드프레스 URL 입력 */}
+      <TextField
+        label="WordPress URL"
+        fullWidth
+        value={wpUrl}
+        onChange={(e) => setWpUrl(e.target.value)}
+        placeholder="https://your-wordpress-site.com"
+        sx={{ mb: 2 }}
+        error={urlError}
+        helperText={urlHelperText}
+      />
+
+      {/* 마이그레이션 버튼 */}
+      <Button variant="contained" onClick={handleMoveArticles} disabled={!tistoryArticles} fullWidth>
+        마이그레이션
+      </Button>
+
+      {/* 티스토리 데이터 미리보기 */}
+      {tistoryArticles && tistoryArticles?.length > 0 && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="h6" gutterBottom>
-            가져온 게시글: {tistoryData.length}개
+            가져온 게시글: {tistoryArticles.length}개
           </Typography>
-          <Paper
-            elevation={1}
-            sx={{
-              p: 2,
-              maxHeight: "400px",
-              overflow: "auto",
-              bgcolor: "#f5f5f5",
-            }}
-          >
-            <pre>{JSON.stringify(tistoryData, null, 2)}</pre>
-          </Paper>
+          <TistoryArticlePreview tistoryArticles={tistoryArticles} />
         </Box>
       )}
     </Paper>
