@@ -79,7 +79,6 @@ export async function POST(req: NextRequest) {
       articleFile: testArticle as unknown as ArticleFileType,
     });
 
-    console.log(result);
 
     return NextResponse.json(true, { status: 200 });
   } catch (error) {

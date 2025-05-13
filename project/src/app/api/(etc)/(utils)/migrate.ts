@@ -21,11 +21,11 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
 
     // Basic 인증 헤더 생성
     const basicAuth = "Basic " + Buffer.from(`${wpId}:${wpApplicationPw}`).toString("base64");
-    
+
     // 요청 바디 설정
     const axiosBody = extractHtmlContent({ wpInfo, articleFile, articlePath });
-    
-    return
+
+    return;
 
     // 요청 헤더 설정
     const axiosConfig = {
@@ -73,9 +73,6 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
     // HTML 파일 -> 문자열로 변경
     const htmlString = await htmlFileToString(htmlFile);
 
-    console.log(htmlString);
-    return;
-
     // HTML 파일에서 제목 추출
     const title = cheerio.load(htmlString)(".title-article").text().trim() || "";
 
@@ -83,7 +80,10 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
     const mediaBaseUrl = getMediaBaseUrl(wpInfo.wpUrl);
 
     // 전처리된 HTML 문자열
-    const preprocessedHtml = preprocessHtml(articlePath, htmlString, mediaBaseUrl);
+    const preprocessedHtml = preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl });
+
+    console.log(preprocessedHtml);
+    return;
 
     // 전처리된 HTML 파싱
     const $ = cheerio.load(preprocessedHtml);
@@ -111,7 +111,14 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////// 이미지 태그 src 속성값 변경
-export function preprocessHtml(articlePath: ArticlePathType, htmlString: string, mediaBaseUrl: string) {
+type PreprocessHtmlType = {
+  articleFile: ArticleFileType;
+  articlePath: ArticlePathType;
+  htmlString: string;
+  mediaBaseUrl: string;
+};
+
+export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl }: PreprocessHtmlType) {
   try {
     // Cheerio로 HTML 파싱
     const $ = cheerio.load(htmlString);
@@ -124,33 +131,29 @@ export function preprocessHtml(articlePath: ArticlePathType, htmlString: string,
           // 이미지 경로 리스트
           const imagePathList = articlePath.imagePathList;
 
-          // HTML > 이미지 태그 > src 값 추출
-          const htmlImgTagSrc = $(el)?.attr("src");
+          // HTML내 이미지 태그의 src 값(확장자 X)
+          const originSrc = $(el)?.attr("src")?.split("/").pop()?.split(".")[0];
 
-          console.log(htmlImgTagSrc);
-          // const htmlImgTagSrc = $(el)?.attr("src")?.split("/").pop();
+          // 매칭되는 이미지 파일 경로(확장자 O)
+          const matchingPath = imagePathList.filter((el) => el.split("-")[0] === originSrc)[0];
 
-          // 매칭되는 이미지 파일 찾기
-          const imageFile = articlePath.imagePathList.find((imagePath) => imagePath.includes(existingSrc as string));
+          // 매칭되는 이미지 파일 인덱스
+          const matchingPathFileIndex = imagePathList.findIndex((path) => path === matchingPath);
 
-          let fileSize;
-          let extension;
+          // 매칭되는 이미지 파일 객체
+          const matchingImageFile = articleFile.imageFileList[matchingPathFileIndex];
 
-          // 이미지 파일 크기 체크
-          articlePath.imagePathList.map((imagePath) => {
-            if (imagePath.includes(existingSrc as string)) {
-              fileSize = (file.size / Math.pow(1024, 2)).toFixed(2);
-            }
-          });
+          // 기존 파일 확장자
+          // const matchingImageFileExtension = matchingImageFile.type.split("/")[1];
 
-          if (fileSize && fileSize > 1) {
-            extension = "jpeg";
-          } else {
-            extension = "png";
-          }
+          // 이미지 파일 크기 체크 및 확장자 변경
+          const extension = changeImageFileExtensionBySize(matchingImageFile.size);
+
+          // 새로 삽입할 이미지 파일 경로
+          const newPath = `${matchingPath.split(".")[0]}.${extension}`;
 
           // src 변경
-          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.${extension}`);
+          $(el)?.attr("src", `${mediaBaseUrl}/${newPath}`);
 
           // 변경된 src 반환
           return $(el)?.attr("src");
@@ -452,4 +455,18 @@ export function getMediaBaseUrl(blogUrl: string) {
   const mediaBaseUrl = `${blogUrl.replace("https", "http")}/wp-content/uploads/${year}/${month}`;
 
   return mediaBaseUrl;
+}
+
+////////// 이미지 파일 크기 체크 및 확장자 변경
+export function changeImageFileExtensionBySize(fileSize: number) {
+  let extension;
+  const fileSizeMb = Number((fileSize / Math.pow(1024, 2)).toFixed(2));
+
+  if (fileSizeMb && fileSizeMb > 1) {
+    extension = "jpeg";
+  } else {
+    extension = "png";
+  }
+
+  return extension;
 }
