@@ -1,4 +1,4 @@
-import { supabase } from "../../supabaseServer";
+import { supabase } from "@/app/api/supabaseServer";
 
 ////////// READ : 파일 목록 가져오기
 export type ArticlePathListType = {

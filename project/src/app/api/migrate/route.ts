@@ -3,8 +3,7 @@ import {
   readArticlesPathList,
   readDownloadArticles,
   ArticlePathListType,
-  coreDownloadFile,
-} from "../(service)/bucket/articles";
+} from "../(etc)/(service)/bucket/articles";
 // import { ArticleHtmlType, TistoryArticleType } from "@/types/tistory";
 // import { createArticle, extractHtmlContent, formatFormData } from "../../../utils/api/tistory/articles/util";
 
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
     // 티스토리 데이터 가져오기
     const articlesPathList = await readArticlesPathList(wpId);
     const articlesFiles = await readDownloadArticles(wpId, articlesPathList as ArticlePathListType[]);
-
+    console.log("articlesFiles", articlesFiles);
 
     return NextResponse.json(true, { status: 200 });
   } catch (error) {
