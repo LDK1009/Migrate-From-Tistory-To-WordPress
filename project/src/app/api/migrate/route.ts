@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readArticlesPathList } from "../(service)/bucket/articles";
+import {
+  readArticlesPathList,
+  readDownloadArticles,
+  ArticlePathListType,
+  coreDownloadFile,
+} from "../(service)/bucket/articles";
 // import { ArticleHtmlType, TistoryArticleType } from "@/types/tistory";
 // import { createArticle, extractHtmlContent, formatFormData } from "../../../utils/api/tistory/articles/util";
 
@@ -54,14 +59,28 @@ import { readArticlesPathList } from "../(service)/bucket/articles";
 export async function POST(req: NextRequest) {
   try {
     // JSON 데이터 파싱
-    const data = await req.json();
-    const wpId = data.wpId;
+    const body = await req.json();
+    const { wpId, wpApplicationPw, wpUrl } = body;
+
+    console.log("wpId", wpId);
+    console.log("wpApplicationPw", wpApplicationPw);
+    console.log("wpUrl", wpUrl);
 
     // 티스토리 데이터 가져오기
-    const tistoryArticles = await readArticlesPathList(wpId);
+    const articlesPathList = await readArticlesPathList(wpId);
+    const articlesFiles = await readDownloadArticles(wpId, articlesPathList as ArticlePathListType[]);
 
-    return NextResponse.json(tistoryArticles, { status: 200 });
+
+    return NextResponse.json(true, { status: 200 });
   } catch (error) {
     return NextResponse.json(error, { status: 500 });
   }
 }
+
+//////////////////////////////////////// 코어 함수 ////////////////////////////////////////
+
+
+
+
+
+

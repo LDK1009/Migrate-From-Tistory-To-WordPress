@@ -1,6 +1,12 @@
 import { supabase } from "../../supabaseServer";
 
 ////////// READ : 파일 목록 가져오기
+export type ArticlePathListType = {
+  articlePath: string;
+  imagePathList: string[];
+  htmlPathList: string;
+};
+
 export async function readArticlesPathList(path: string) {
   try {
     // 경로를 매개변수로 받아 유연하게 사용
@@ -32,7 +38,46 @@ export async function readArticlesPathList(path: string) {
 
     return articlesPathList;
   } catch (error) {
-    console.error("readArticlesPathList 오류:", error);
-    return [];
+    return { data: null, error: error };
+  }
+}
+
+////////// READ : 파일 목록 다운로드하기
+export async function readDownloadArticles(wpId: string, articlePathList: ArticlePathListType[]) {
+  try {
+    const articlesFiles = await Promise.all(
+      articlePathList.map(async (article) => {
+        // 경로 분리
+        const { imagePathList, htmlPathList } = article;
+        const path = `${wpId}/${article.articlePath}`;
+
+        // 이미지 파일 다운로드
+        const imagePathListResponse = await Promise.all(
+          imagePathList.map(async (imagePath) => await coreDownloadFile("articles", `${path}/img/${imagePath}`))
+        );
+
+        // HTML 파일 다운로드
+        const htmlPathListResponse = await coreDownloadFile("articles", `${path}/${htmlPathList}`);
+
+        return {
+          imagePathList: imagePathListResponse,
+          htmlPathList: htmlPathListResponse,
+        };
+      })
+    );
+
+    return articlesFiles;
+  } catch (error) {
+    return { data: null, error: error };
+  }
+}
+
+////////// Util : 파일 다운로드
+export async function coreDownloadFile(bucketName: string, path: string) {
+  try {
+    const response = await supabase.storage.from(bucketName).download(path);
+    return response;
+  } catch (error) {
+    return { data: null, error: error };
   }
 }

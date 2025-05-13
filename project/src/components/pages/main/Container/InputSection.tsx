@@ -79,7 +79,7 @@ const InputSection = () => {
     }
 
     // API 요청
-    const response = await api.post("/migrate", { wpId });
+    const response = await api.post("/migrate", { wpId, wpApplicationPw, wpUrl });
     console.log(response.data);
     return;
 

@@ -147,10 +147,71 @@ export function preprocessHtml(
 }
 
 ////////// 워드프레스 게시글 작성 함수 인수 타입
+// type CreateArticleType = {
+//   wpUrl: string;
+//   wpId: string;
+//   applicationPassword: string;
+//   article: TistoryArticleType;
+//   articleHtml: ArticleHtmlType;
+//   articleImages: File[];
+// };
+
+// ////////// 워드프레스 게시글 작성 함수
+// export async function createArticle({
+//   wpId,
+//   applicationPassword,
+//   wpUrl,
+//   article,
+//   articleHtml,
+//   articleImages,
+// }: CreateArticleType) {
+//   try {
+//     // 사용자 이름과 애플리케이션 비밀번호로 Basic 인증 헤더 생성
+//     const username = wpId;
+//     // 애플리케이션 비밀번호 추출
+//     const appPassword = applicationPassword;
+//     // Basic 인증 헤더 생성
+//     const basicAuth = "Basic " + Buffer.from(`${username}:${appPassword}`).toString("base64");
+
+//     // 요청 바디 설정
+//     const axiosBody = articleHtml;
+
+//     // 요청 헤더 설정
+//     const axiosConfig = {
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: basicAuth,
+//       },
+//     };
+
+//     // 게시글 업로드
+//     const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
+
+//     // 이미지 업로드 처리
+//     if (articleImages && articleImages.length > 0) {
+//       await Promise.all(
+//         articleImages.map(async (image, index) => {
+//           const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
+//           return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
+//         })
+//       );
+//     }
+//     return response.data; // 생성된 글 정보 반환
+//   } catch (error) {
+//     console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
+//     throw error;
+//   }
+// }
+
+//////////////////////////////////////////////////////////////////////////////// 임시 //////////////////////////////////////////////////////////////////////////////////
+
+
 type CreateArticleType = {
-  wpUrl: string;
-  wpId: string;
-  applicationPassword: string;
+  wpInfo: {
+    wpId: string;
+    wpApplicationPw: string;
+    wpUrl: string;
+  };
   article: TistoryArticleType;
   articleHtml: ArticleHtmlType;
   articleImages: File[];
@@ -158,9 +219,9 @@ type CreateArticleType = {
 
 ////////// 워드프레스 게시글 작성 함수
 export async function createArticle({
-  wpUrl,
   wpId,
   applicationPassword,
+  wpUrl,
   article,
   articleHtml,
   articleImages,
@@ -202,6 +263,12 @@ export async function createArticle({
     throw error;
   }
 }
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 ////////// 워드프레스 이미지 업로드 함수
 export async function uploadImageToWordPress(
