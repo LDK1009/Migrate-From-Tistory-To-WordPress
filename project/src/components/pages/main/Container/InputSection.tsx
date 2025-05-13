@@ -5,6 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
 import { createArticleList } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
+import api from "@/lib/apiClient";
 
 const InputSection = () => {
   //////////////////////////////////////// 상태 ////////////////////////////////////////
@@ -67,37 +68,6 @@ const InputSection = () => {
     setTistoryArticles(files);
   };
 
-  // 티스토리 데이터 가져오기
-  // async function handleSubmit() {
-  //   // FormData 객체 생성
-  //   const formData = new FormData();
-
-  //   // 각 게시글의 HTML 파일 추가
-  //   tistoryArticles.forEach((article) => {
-  //     if (article.htmlFile) {
-  //       formData.append(`html_${article.articleNumber}`, article.htmlFile);
-  //     }
-
-  //     // 각 게시글의 이미지 파일 추가
-  //     article.images?.forEach((img: File, imgIndex: number) => {
-  //       formData.append(`image_${article.articleNumber}_${imgIndex}`, img);
-  //     });
-  //   });
-
-  //   // FormData를 사용하여 API 요청
-  //   const response = await api.post("/tistory/articles", formData, {
-  //     headers: {
-  //       "Content-Type": "multipart/form-data",
-  //     },
-  //   });
-
-  //   if (response.status === 200) {
-  //     alert("티스토리 데이터 가져오기 성공");
-  //   } else {
-  //     alert("티스토리 데이터 가져오기 실패");
-  //   }
-  // }
-
   ////////// 마이그레이션 버튼 클릭
   async function handleMoveArticles() {
     // 마이그레이션 상태 설정
@@ -108,9 +78,15 @@ const InputSection = () => {
       return;
     }
 
+    // API 요청
+    const response = await api.post("/migrate", { wpId });
+    console.log(response.data);
+    return;
+
     // 파일 업로드
     const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
 
+    // 티스토리 데이터 가져오기 실패
     // 티스토리 데이터 가져오기 실패
     if (createArticleError) {
       enqueueSnackbar("마이그레이션 실패", { variant: "error" });
