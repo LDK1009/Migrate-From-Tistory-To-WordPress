@@ -10,9 +10,12 @@ export async function createArticle(articleNumber: number, article: TistoryArtic
     if (images && images.length > 0) {
       await Promise.all(
         images.map(async (imageFile, idx) => {
-          const imageExtension = imageFile.name.split(".").pop();
-          const imageName = `${articleNumber}-${idx}.${imageExtension}`;
-          const imagePath = `${folderName}/article-${articleNumber}/img/${imageName}`;
+          const originalName = imageFile.name.split(".")[0];
+          const imageExtension = imageFile.name.split(".")[1];
+
+          const uploadFileName = `${originalName}-${articleNumber}-${idx}.${imageExtension}`;
+
+          const imagePath = `${folderName}/article-${articleNumber}/img/${uploadFileName}`;
 
           await uploadFile("articles", imagePath, imageFile);
         })

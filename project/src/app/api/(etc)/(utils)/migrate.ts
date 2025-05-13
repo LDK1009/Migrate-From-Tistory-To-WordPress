@@ -1,7 +1,199 @@
 import { TistoryArticleType } from "@/types/tistory";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { ArticleHtmlType } from "@/types/tistory";
+import { ArticleFileType, ArticlePathType } from "../(types)/ArticleType";
+
+////////// 워드프레스 게시글 작성 함수
+type CreateArticleType = {
+  wpInfo: {
+    wpId: string;
+    wpApplicationPw: string;
+    wpUrl: string;
+  };
+  articlePath: ArticlePathType;
+  articleFile: ArticleFileType;
+};
+
+export async function createWordPressArticle({ wpInfo, articleFile, articlePath }: CreateArticleType) {
+  try {
+    // 워드프레스 정보 비구조화
+    const { wpId, wpApplicationPw, wpUrl } = wpInfo;
+
+    // Basic 인증 헤더 생성
+    const basicAuth = "Basic " + Buffer.from(`${wpId}:${wpApplicationPw}`).toString("base64");
+    
+    // 요청 바디 설정
+    const axiosBody = extractHtmlContent({ wpInfo, articleFile, articlePath });
+    
+    return
+
+    // 요청 헤더 설정
+    const axiosConfig = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: basicAuth,
+      },
+    };
+
+    // 게시글 업로드
+    const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
+
+    // 이미지 업로드 처리
+    if (articleImages && articleImages.length > 0) {
+      await Promise.all(
+        articleImages.map(async (image, index) => {
+          const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
+          return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
+        })
+      );
+    }
+    return response.data; // 생성된 글 정보 반환
+  } catch (error) {
+    console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
+    throw error;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////임시
+type ExtractHtmlContentType = {
+  wpInfo: {
+    wpId: string;
+    wpApplicationPw: string;
+    wpUrl: string;
+  };
+  articleFile: ArticleFileType;
+  articlePath: ArticlePathType;
+};
+
+export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: ExtractHtmlContentType) {
+  try {
+    // HTML 파일 객체 추출
+    const htmlFile = articleFile.htmlFile;
+
+    // HTML 파일 -> 문자열로 변경
+    const htmlString = await htmlFileToString(htmlFile);
+
+    console.log(htmlString);
+    return;
+
+    // HTML 파일에서 제목 추출
+    const title = cheerio.load(htmlString)(".title-article").text().trim() || "";
+
+    // 미디어 업로드 베이스 URL 생성
+    const mediaBaseUrl = getMediaBaseUrl(wpInfo.wpUrl);
+
+    // 전처리된 HTML 문자열
+    const preprocessedHtml = preprocessHtml(articlePath, htmlString, mediaBaseUrl);
+
+    // 전처리된 HTML 파싱
+    const $ = cheerio.load(preprocessedHtml);
+
+    // 본문 추출
+    const content = $(".article-view").html() || "";
+
+    // 작성일 추출
+    const date = $(".date").text().trim() || "";
+
+    // 게시글 데이터 객체 생성
+    const articleData = {
+      title,
+      content,
+      date,
+      status: "publish",
+    };
+
+    return articleData;
+  } catch (error) {
+    throw error;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////// 이미지 태그 src 속성값 변경
+export function preprocessHtml(articlePath: ArticlePathType, htmlString: string, mediaBaseUrl: string) {
+  try {
+    // Cheerio로 HTML 파싱
+    const $ = cheerio.load(htmlString);
+
+    // 이미지 태그의 src 속성 변경
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const images =
+      $("img")
+        .map((idx, el) => {
+          // 이미지 경로 리스트
+          const imagePathList = articlePath.imagePathList;
+
+          // HTML > 이미지 태그 > src 값 추출
+          const htmlImgTagSrc = $(el)?.attr("src");
+
+          console.log(htmlImgTagSrc);
+          // const htmlImgTagSrc = $(el)?.attr("src")?.split("/").pop();
+
+          // 매칭되는 이미지 파일 찾기
+          const imageFile = articlePath.imagePathList.find((imagePath) => imagePath.includes(existingSrc as string));
+
+          let fileSize;
+          let extension;
+
+          // 이미지 파일 크기 체크
+          articlePath.imagePathList.map((imagePath) => {
+            if (imagePath.includes(existingSrc as string)) {
+              fileSize = (file.size / Math.pow(1024, 2)).toFixed(2);
+            }
+          });
+
+          if (fileSize && fileSize > 1) {
+            extension = "jpeg";
+          } else {
+            extension = "png";
+          }
+
+          // src 변경
+          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.${extension}`);
+
+          // 변경된 src 반환
+          return $(el)?.attr("src");
+        })
+        // 배열로 반환
+        .get()
+        // falsy한 요소 제거
+        .filter(Boolean) || [];
+
+    return $.html();
+  } catch (error) {
+    throw error;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////// 폼데이터 포맷팅(객체 -> 객체 배열)
 export function formatFormData(formData: FormData) {
@@ -57,94 +249,43 @@ export function formatFormData(formData: FormData) {
 }
 
 ////////// HTML 파일 내용 추출 및 분석 함수
-export async function extractHtmlContent(article: TistoryArticleType, blogUrl: string) {
-  try {
-    // HTML 파일 객체
-    const htmlFile = article.htmlFile as File;
-    // HTML 파일 -> 문자열로 변경
-    const htmlString = await htmlFileToString(htmlFile);
-    // 게시글 제목
-    const articleTitle = extractArticleTitle(htmlFile);
-    // 미디어 기본 주소
-    const mediaBaseUrl = getMediaBaseUrl(blogUrl);
+// export async function extractHtmlContent(article: TistoryArticleType, blogUrl: string) {
+//   try {
+//     // HTML 파일 객체
+//     const htmlFile = article.htmlFile as File;
+//     // HTML 파일 -> 문자열로 변경
+//     const htmlString = await htmlFileToString(htmlFile);
+//     // 게시글 제목
+//     const articleTitle = extractArticleTitle(htmlFile);
+//     // 미디어 기본 주소
+//     const mediaBaseUrl = getMediaBaseUrl(blogUrl);
 
-    // 전처리된 HTML 문자열
-    const preprocessedHtml = preprocessHtml(article, article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
+//     // 전처리된 HTML 문자열
+//     const preprocessedHtml = preprocessHtml(article, article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
 
-    // HTML 파싱
-    const $ = cheerio.load(preprocessedHtml);
+//     // HTML 파싱
+//     const $ = cheerio.load(preprocessedHtml);
 
-    // 제목 추출
-    const title = $(".title-article").text().trim() || "";
-    // 본문 추출
-    const content = $(".article-view").html() || "";
-    // 작성일 추출
-    const date = $(".date").text().trim() || "";
+//     // 제목 추출
+//     const title = $(".title-article").text().trim() || "";
+//     // 본문 추출
+//     const content = $(".article-view").html() || "";
+//     // 작성일 추출
+//     const date = $(".date").text().trim() || "";
 
-    // 게시글 데이터 객체 생성
-    const articleData = {
-      title,
-      content,
-      date,
-      status: "publish",
-    };
+//     // 게시글 데이터 객체 생성
+//     const articleData = {
+//       title,
+//       content,
+//       date,
+//       status: "publish",
+//     };
 
-    return articleData;
-  } catch (error) {
-    throw error;
-  }
-}
-
-////////// 이미지 태그 src 속성값 변경
-export function preprocessHtml(
-  article: TistoryArticleType,
-  articleNumber: number,
-  articleTitle: string,
-  htmlString: string,
-  mediaBaseUrl: string
-) {
-  try {
-    // Cheerio로 HTML 파싱
-    const $ = cheerio.load(htmlString);
-
-    // 이미지 태그의 src 속성 변경
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const images =
-      $("img")
-        .map((idx, el) => {
-          const existingSrc = $(el)?.attr("src")?.split("/").pop();
-
-          let fileSize;
-          let extension;
-
-          article.images?.map((file) => {
-            if (file.name.includes(existingSrc as string)) {
-              fileSize = (file.size / Math.pow(1024, 2)).toFixed(2);
-            }
-          });
-
-          if (fileSize && fileSize > 1) {
-            extension = "jpeg";
-          } else {
-            extension = "png";
-          }
-
-          // src 변경
-          $(el)?.attr("src", `${mediaBaseUrl}/${articleNumber}_${idx}.${extension}`);
-
-          // 변경된 src 반환
-          return $(el)?.attr("src");
-        })
-        // 배열로 반환
-        .get()
-        // falsy한 요소 제거
-        .filter(Boolean) || [];
-
-    return $.html();
-  } catch (error) {
-    throw error;
-  }
-}
+//     return articleData;
+//   } catch (error) {
+//     throw error;
+//   }
+// }
 
 ////////// 워드프레스 게시글 작성 함수 인수 타입
 // type CreateArticleType = {
@@ -205,70 +346,7 @@ export function preprocessHtml(
 
 //////////////////////////////////////////////////////////////////////////////// 임시 //////////////////////////////////////////////////////////////////////////////////
 
-
-type CreateArticleType = {
-  wpInfo: {
-    wpId: string;
-    wpApplicationPw: string;
-    wpUrl: string;
-  };
-  article: TistoryArticleType;
-  articleHtml: ArticleHtmlType;
-  articleImages: File[];
-};
-
-////////// 워드프레스 게시글 작성 함수
-export async function createArticle({
-  wpId,
-  applicationPassword,
-  wpUrl,
-  article,
-  articleHtml,
-  articleImages,
-}: CreateArticleType) {
-  try {
-    // 사용자 이름과 애플리케이션 비밀번호로 Basic 인증 헤더 생성
-    const username = wpId;
-    // 애플리케이션 비밀번호 추출
-    const appPassword = applicationPassword;
-    // Basic 인증 헤더 생성
-    const basicAuth = "Basic " + Buffer.from(`${username}:${appPassword}`).toString("base64");
-
-    // 요청 바디 설정
-    const axiosBody = articleHtml;
-
-    // 요청 헤더 설정
-    const axiosConfig = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: basicAuth,
-      },
-    };
-
-    // 게시글 업로드
-    const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
-
-    // 이미지 업로드 처리
-    if (articleImages && articleImages.length > 0) {
-      await Promise.all(
-        articleImages.map(async (image, index) => {
-          const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
-          return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
-        })
-      );
-    }
-    return response.data; // 생성된 글 정보 반환
-  } catch (error) {
-    console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
-    throw error;
-  }
-}
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
-
 
 ////////// 워드프레스 이미지 업로드 함수
 export async function uploadImageToWordPress(
@@ -311,7 +389,7 @@ export async function uploadImageToWordPress(
 }
 
 ////////// HTML 파일 -> 문자열로 변경
-export async function htmlFileToString(htmlFile: File) {
+export async function htmlFileToString(htmlFile: Blob) {
   try {
     // 데이터 형식 변환(파일 객체 -> 바이너리)
     const arrayBuffer = await htmlFile.arrayBuffer();
@@ -327,7 +405,7 @@ export async function htmlFileToString(htmlFile: File) {
 }
 
 ////////// 게시글 제목 추출
-export function extractArticleTitle(htmlFile: File) {
+export function extractArticleTitle(htmlFile: Blob) {
   try {
     // HTML 파일 이름
     const htmlFileName = htmlFile.name; // 예: '티스토리 데이터 압축파일/15/15-다이소-집게핀-머리집게-핀-구입-사용-후기.html'

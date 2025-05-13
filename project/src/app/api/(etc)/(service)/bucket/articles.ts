@@ -52,16 +52,19 @@ export async function readDownloadArticles(wpId: string, articlePathList: Articl
         const path = `${wpId}/${article.articlePath}`;
 
         // 이미지 파일 다운로드
-        const imagePathListResponse = await Promise.all(
-          imagePathList.map(async (imagePath) => await coreDownloadFile("articles", `${path}/img/${imagePath}`))
+        const imageFileList = await Promise.all(
+          imagePathList.map(async (imagePath) => {
+            const { data: imageFile } = await coreDownloadFile("articles", `${path}/img/${imagePath}`);
+            return imageFile;
+          })
         );
 
         // HTML 파일 다운로드
-        const htmlPathListResponse = await coreDownloadFile("articles", `${path}/${htmlPathList}`);
+        const { data: htmlFile } = await coreDownloadFile("articles", `${path}/${htmlPathList}`);
 
         return {
-          imagePathList: imagePathListResponse,
-          htmlPathList: htmlPathListResponse,
+          imageFileList: imageFileList,
+          htmlFile: htmlFile,
         };
       })
     );

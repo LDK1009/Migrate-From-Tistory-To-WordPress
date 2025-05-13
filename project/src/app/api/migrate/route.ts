@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  readArticlesPathList,
-  readDownloadArticles,
-  ArticlePathListType,
-} from "../(etc)/(service)/bucket/articles";
+import { readArticlesPathList, readDownloadArticles } from "../(etc)/(service)/bucket/articles";
+import { ArticleFileType, ArticlePathType } from "../(etc)/(types)/ArticleType";
+import { createWordPressArticle } from "../(etc)/(utils)/migrate";
+
+// import { ArticlePathType } from "../(etc)/(types)/tistory";
 // import { ArticleHtmlType, TistoryArticleType } from "@/types/tistory";
 // import { createArticle, extractHtmlContent, formatFormData } from "../../../utils/api/tistory/articles/util";
 
@@ -60,15 +60,26 @@ export async function POST(req: NextRequest) {
     // JSON 데이터 파싱
     const body = await req.json();
     const { wpId, wpApplicationPw, wpUrl } = body;
+    const wpInfo = { wpId, wpApplicationPw, wpUrl };
 
-    console.log("wpId", wpId);
-    console.log("wpApplicationPw", wpApplicationPw);
-    console.log("wpUrl", wpUrl);
+    // 게시물 파일 경로 가져오기
+    const articlesPathList: ArticlePathType[] = (await readArticlesPathList(wpId)) as ArticlePathType[];
 
-    // 티스토리 데이터 가져오기
-    const articlesPathList = await readArticlesPathList(wpId);
-    const articlesFiles = await readDownloadArticles(wpId, articlesPathList as ArticlePathListType[]);
-    console.log("articlesFiles", articlesFiles);
+    // 게시물 파일 가져오기
+    const articlesFilesResponse = await readDownloadArticles(wpId, articlesPathList);
+
+    // 배열인지 확인하고 안전하게 첫 번째 요소 접근
+    const testArticle =
+      Array.isArray(articlesFilesResponse) && articlesFilesResponse.length > 0 ? articlesFilesResponse[0] : null;
+
+    // 게시물 파일 업로드
+    const result = await createWordPressArticle({
+      wpInfo: wpInfo,
+      articlePath: articlesPathList[0],
+      articleFile: testArticle as unknown as ArticleFileType,
+    });
+
+    console.log(result);
 
     return NextResponse.json(true, { status: 200 });
   } catch (error) {
@@ -77,9 +88,3 @@ export async function POST(req: NextRequest) {
 }
 
 //////////////////////////////////////// 코어 함수 ////////////////////////////////////////
-
-
-
-
-
-
