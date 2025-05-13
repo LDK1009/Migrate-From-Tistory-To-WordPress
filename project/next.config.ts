@@ -9,9 +9,14 @@ const withPWA = require("next-pwa")({
 // next.config 설정
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-   // ...기존에 추가했었던 next.config.ts 설정
-   compiler: {
-    emotion: true,  // mui style 적용
+  // ...기존에 추가했었던 next.config.ts 설정
+  compiler: {
+    emotion: true, // mui style 적용
+  },
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb", // 기본값 '1mb'
+    },
   },
 };
 
