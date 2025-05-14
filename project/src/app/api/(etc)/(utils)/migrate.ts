@@ -2,6 +2,7 @@ import { TistoryArticleType } from "@/types/tistory";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { ArticleFileType, ArticlePathType } from "../(types)/ArticleType";
+import sharp from "sharp";
 
 ////////// 타입
 type CreateArticleType = {
@@ -212,7 +213,15 @@ export async function uploadImageToWordPress({
     const buffer = Buffer.from(arrayBuffer);
 
     // 버퍼 객체 -> 블롭 객체
-    const blob = new Blob([buffer], { type: imageFile.type });
+    let blob = new Blob([buffer], { type: imageFile.type });
+
+    if (imageFile.size > Math.pow(1024, 2)) {
+      console.log("이미지 리사이징 시작");
+      console.log("파일 사이즈 : ", imageFile.size / Math.pow(1024, 2), "MB");
+      blob = await resizeImage(imageFile);
+      console.log("이미지 리사이징 완료");
+      console.log("리사이징 파일 사이즈 : ", blob.size / Math.pow(1024, 2), "MB");
+    }
 
     // 이미지 파일 업로드 요청 바디 설정
     const formData = new FormData();
@@ -299,6 +308,33 @@ export function changeImageFileExtensionBySize(fileSize: number) {
   }
 
   return extension;
+}
+
+// 이미지 리사이징
+export async function resizeImage(imageFile: Blob) {
+  try {
+    // Blob을 Buffer로 변환
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Sharp를 사용하여 이미지 리사이징 및 압축
+    const resizedImageBuffer = await sharp(buffer)
+      .resize(1200, 1200, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .jpeg({
+        quality: 80,
+        progressive: true,
+      })
+      .toBuffer();
+
+    // Buffer를 Blob으로 변환하여 반환
+    return new Blob([resizedImageBuffer], { type: "image/jpeg" });
+  } catch (error) {
+    console.error("이미지 리사이징 오류:", error);
+    throw error;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////// DEPRECATED //////////////////////////////////////////////////////////////////////
