@@ -24,6 +24,11 @@ function formatFiles(files: FileList) {
   const articles: TistoryArticleType[] = [];
 
   for (const file of files) {
+    // HTML, 이미지 파일만 포함
+    if (!(file.type.includes("image") || file.type.includes("html"))) {
+      continue;
+    }
+
     // 파일 경로 분리
     const pathParts = file.webkitRelativePath.split("/");
     // 게시글 번호 추출
