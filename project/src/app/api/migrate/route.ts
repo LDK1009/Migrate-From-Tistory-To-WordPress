@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readArticlesPathList, readDownloadArticles } from "../(etc)/(service)/bucket/articles";
-import { ArticleFileType, ArticlePathType } from "../(etc)/(types)/ArticleType";
+import { ArticleFileType, ArticlePathType } from "../(etc)/(types)/articleType";
 import { createWordPressArticle } from "../(etc)/(utils)/migrate";
 
 export async function POST(req: NextRequest) {
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(true, { status: 200 });
   } catch (error) {
+    console.error("POST(/migrate) : 게시물 파일 업로드 중 오류", error);
     return NextResponse.json(error, { status: 500 });
   }
 }

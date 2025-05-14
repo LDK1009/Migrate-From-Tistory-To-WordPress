@@ -48,6 +48,7 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
     // 게시글 업로드
     await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
 
+    // 이미지 파일 리스트 존재 여부 확인
     if (!imageFileList || imageFileList.length === 0) {
       return {
         data: {
@@ -143,6 +144,11 @@ type PreprocessHtmlType = {
 ////////// HTML 전처리
 export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl }: PreprocessHtmlType) {
   try {
+    // 이미지 파일 리스트 존재 여부 확인
+    if (!articlePath.imagePathList || articlePath.imagePathList.length === 0) {
+      return htmlString;
+    }
+
     // 이미지 경로 리스트
     const imagePathList = articlePath.imagePathList;
 
