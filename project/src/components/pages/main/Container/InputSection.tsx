@@ -1,7 +1,7 @@
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState, useEffect } from "react";
-import { enqueueSnackbar } from "notistack";
+import { closeSnackbar, enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
 import { createArticleList, emptyBucket } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
@@ -193,7 +193,13 @@ const InputSection = () => {
         마이그레이션
       </Button>
 
-      <Button variant="contained" onClick={async () => await emptyBucket(wpId)} fullWidth>
+      <Button
+        variant="contained"
+        onClick={async () => {
+          await emptyBucket(wpId);
+        }}
+        fullWidth
+      >
         버킷 비우기
       </Button>
 
