@@ -1,6 +1,6 @@
 import { supabase } from "@/app/api/supabaseServer";
 import { supabase as supabaseClient } from "@/lib/supabaseClient";
-import { decodeFromBase64 } from "@/utils/base64";
+import { decodeFromBase64, encodeToBase64 } from "@/utils/base64";
 
 ////////// READ : 파일 목록 가져오기
 export type ArticlePathListType = {
@@ -29,8 +29,6 @@ export async function readArticlesPathList(path: string) {
 
         const imagePathList = imagePathListResponse?.map((item) => {
           const decodedFileName = decodeFromBase64(item.name.split(".")[0]);
-          const numbering1 = item.name.split("-")[1].split(".")[0];
-          const numbering2 = item.name.split("-")[2].split(".")[0];
           const decodedExtension = item.name.split(".").pop();
 
           return `${decodedFileName}.${decodedExtension}`;
@@ -58,18 +56,22 @@ export async function readDownloadArticles(wpId: string, articlePathList: Articl
       articlePathList.map(async (article) => {
         // 경로 분리
         const { imagePathList, htmlPathList } = article;
-        const path = `${wpId}/${article.articlePath}`;
+        const basePath = `${wpId}/${article.articlePath}`;
 
         // 이미지 파일 다운로드
         const imageFileList = await Promise.all(
-          imagePathList.map(async (imagePath) => {
-            const { data: imageFile } = await coreDownloadFile("articles", `${path}/img/${imagePath}`);
+          imagePathList.map(async (path) => {
+            const fileName = encodeToBase64(path.split(".")[0]);
+            const extension = path.split(".").pop();
+            const imagePath = `${fileName}.${extension}`;
+
+            const { data: imageFile } = await coreDownloadFile("articles", `${basePath}/img/${imagePath}`);
             return imageFile;
           })
         );
 
         // HTML 파일 다운로드
-        const { data: htmlFile } = await coreDownloadFile("articles", `${path}/${htmlPathList}`);
+        const { data: htmlFile } = await coreDownloadFile("articles", `${basePath}/${htmlPathList}`);
 
         return {
           imageFileList: imageFileList,
