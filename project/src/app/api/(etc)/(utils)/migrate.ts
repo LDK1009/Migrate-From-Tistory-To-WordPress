@@ -171,8 +171,6 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
           // 새로 삽입할 이미지 파일 경로
           const newPath = `${matchingPath.split(".")[0]}.${extension}`;
 
-          console.log("newPath : ", newPath);
-
           // src 변경
           $(el)?.attr("src", `${mediaBaseUrl}/${newPath}`);
 
@@ -216,11 +214,7 @@ export async function uploadImageToWordPress({
     let blob = new Blob([buffer], { type: imageFile.type });
 
     if (imageFile.size > Math.pow(1024, 2)) {
-      console.log("이미지 리사이징 시작");
-      console.log("파일 사이즈 : ", imageFile.size / Math.pow(1024, 2), "MB");
       blob = await resizeImage(imageFile);
-      console.log("이미지 리사이징 완료");
-      console.log("리사이징 파일 사이즈 : ", blob.size / Math.pow(1024, 2), "MB");
     }
 
     // 이미지 파일 업로드 요청 바디 설정
