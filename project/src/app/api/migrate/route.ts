@@ -13,13 +13,24 @@ export async function POST(req: NextRequest) {
     // 게시물 파일 경로 가져오기
     const articlesPathList: ArticlePathType[] = (await readArticlesPathList(wpId)) as ArticlePathType[];
 
+    // 예외 처리 : 게시물 파일 경로 목록이 없거나 빈 배열이라면 예외 발생
+    if (!Array.isArray(articlesPathList) || articlesPathList.length === 0) {
+      throw new Error("게시물 불러오기 실패");
+    }
+
     // 게시물 파일 가져오기
     const articleFileList = await readDownloadArticles(wpId, articlesPathList);
 
-    // 배열 확인 + 배열 길이 확인
+    // 예외 처리 : 게시물 파일 목록이 없거나 빈 배열이라면 예외 발생
     if (!Array.isArray(articleFileList) || articleFileList.length === 0) {
-      throw new Error("게시물 파일이 없습니다.");
+      throw new Error("게시물 다운로드 실패");
     }
+    
+    console.log("================================================");
+    console.log(articleFileList);
+    console.log(articlesPathList);
+    console.log("================================================");
+    return NextResponse.json(articleFileList, { status: 200 });
 
     // 게시물 파일 업로드
     await Promise.all(
