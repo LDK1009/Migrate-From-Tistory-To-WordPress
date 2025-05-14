@@ -67,7 +67,6 @@ export async function uploadFile(bucketName: string, filePath: string, file: Fil
 export async function emptyBucket(wpId: string) {
   try {
     const articlesPathList = await readArticlesPathList(wpId);
-    console.log(articlesPathList);
 
     await Promise.all(
       articlesPathList.map((article) => {
@@ -76,22 +75,12 @@ export async function emptyBucket(wpId: string) {
 
         // 이미지 삭제
         imagePathList.map(async (path) => {
-          console.log(`${wpId}/img/${path} 삭제 시작`);
-          const response = await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/img/${path}`]);
-          if (response.error) {
-            console.log(`${wpId}/img/${path} 삭제 완료`);
-          }
+          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/img/${path}`]);
         });
 
         // html 삭제
         htmlPathList.map(async (path) => {
-          console.log(`${wpId}/${path} 삭제 시작`);
-
-          const response = await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/${path}`]);
-
-          if (response.error) {
-            console.log(`${wpId}/img/${path} 삭제 완료`);
-          }
+          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/${path}`]);
         });
       })
     );
