@@ -1,7 +1,6 @@
 import { TistoryArticleType } from "@/types/tistory";
 import { supabase } from "../../lib/supabaseClient";
 import { encodeToBase64 } from "@/utils/base64";
-import { ArticlePathType } from "@/app/api/(etc)/(types)/ArticleType";
 
 ////////// CREATE : 게시물 업로드
 export async function createArticle(articleNumber: number, article: TistoryArticleType, folderName: string) {
@@ -12,10 +11,10 @@ export async function createArticle(articleNumber: number, article: TistoryArtic
     if (images && images.length > 0) {
       await Promise.all(
         images.map(async (imageFile, idx) => {
-          const originalName = encodeToBase64(imageFile.name.split(".")[0]);
+          const originalName = encodeToBase64(`${imageFile.name.split(".")[0]}-${articleNumber}-${idx}`);
           const imageExtension = imageFile.name.split(".")[1];
 
-          const uploadFileName = `${originalName}-${articleNumber}-${idx}.${imageExtension}`;
+          const uploadFileName = `${originalName}.${imageExtension}`;
 
           const imagePath = `${folderName}/article-${articleNumber}/img/${uploadFileName}`;
 
@@ -79,21 +78,20 @@ export async function emptyBucket(wpId: string) {
         imagePathList.map(async (path) => {
           console.log(`${wpId}/img/${path} 삭제 시작`);
           const response = await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/img/${path}`]);
-          if(response.error){
+          if (response.error) {
             console.log(`${wpId}/img/${path} 삭제 완료`);
           }
         });
-        
+
         // html 삭제
         htmlPathList.map(async (path) => {
           console.log(`${wpId}/${path} 삭제 시작`);
 
           const response = await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/${path}`]);
 
-          if(response.error){
+          if (response.error) {
             console.log(`${wpId}/img/${path} 삭제 완료`);
           }
-
         });
       })
     );
@@ -143,6 +141,7 @@ export async function readArticlesPathList(path: string): Promise<ArticlePathLis
 
     return articlesPathList;
   } catch (error) {
-    return { data: null, error: error };
+    console.error("readArticlesPathList()", error);
+    return [];
   }
 }
