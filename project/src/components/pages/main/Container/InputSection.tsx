@@ -78,14 +78,18 @@ const InputSection = () => {
       return;
     }
 
-    // API 요청
-    const response = await api.post("/migrate", { wpId, wpApplicationPw, wpUrl });
-    console.log(response.data);
-
-    return;
-
     // 파일 업로드
     const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+
+    if (createArticleError) {
+      enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+      return;
+    }
+
+    // API 요청
+    const response = await api.post("/migrate", { wpId, wpApplicationPw, wpUrl });
+
+    return;
 
     // 티스토리 데이터 가져오기 실패
     // 티스토리 데이터 가져오기 실패

@@ -3,7 +3,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { ArticleFileType, ArticlePathType } from "../(types)/ArticleType";
 
-////////// 워드프레스 게시글 작성 함수
+////////// 타입
 type CreateArticleType = {
   wpInfo: {
     wpId: string;
@@ -14,18 +14,22 @@ type CreateArticleType = {
   articleFile: ArticleFileType;
 };
 
+////////// 워드프레스 게시글 작성
 export async function createWordPressArticle({ wpInfo, articleFile, articlePath }: CreateArticleType) {
   try {
     // 워드프레스 정보 비구조화
     const { wpId, wpApplicationPw, wpUrl } = wpInfo;
 
+    // 이미지 파일 리스트 비구조화
+    const { imageFileList } = articleFile;
+
+    const { imagePathList } = articlePath;
+
     // Basic 인증 헤더 생성
     const basicAuth = "Basic " + Buffer.from(`${wpId}:${wpApplicationPw}`).toString("base64");
 
     // 요청 바디 설정
-    const axiosBody = extractHtmlContent({ wpInfo, articleFile, articlePath });
-
-    return;
+    const axiosBody = await extractHtmlContent({ wpInfo, articleFile, articlePath });
 
     // 요청 헤더 설정
     const axiosConfig = {
@@ -36,25 +40,29 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
     };
 
     // 게시글 업로드
-    const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
+    await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
 
     // 이미지 업로드 처리
-    if (articleImages && articleImages.length > 0) {
+    if (imageFileList && imageFileList.length > 0) {
       await Promise.all(
-        articleImages.map(async (image, index) => {
-          const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
-          return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
+        imageFileList.map(async (imageFile, index) => {
+          const uploadImageFileName = imagePathList[index];
+          console.log(uploadImageFileName);
+
+          return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile, uploadImageFileName });
         })
       );
     }
-    return response.data; // 생성된 글 정보 반환
+
+    return axiosBody; // 생성된 글 정보 반환
   } catch (error) {
     console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
+    console.log(error);
     throw error;
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////임시
+////////// 타입
 type ExtractHtmlContentType = {
   wpInfo: {
     wpId: string;
@@ -65,6 +73,7 @@ type ExtractHtmlContentType = {
   articlePath: ArticlePathType;
 };
 
+////////// HTML 추출
 export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: ExtractHtmlContentType) {
   try {
     // HTML 파일 객체 추출
@@ -81,9 +90,6 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
 
     // 전처리된 HTML 문자열
     const preprocessedHtml = preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl });
-
-    console.log(preprocessedHtml);
-    return;
 
     // 전처리된 HTML 파싱
     const $ = cheerio.load(preprocessedHtml);
@@ -108,9 +114,7 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-////////// 이미지 태그 src 속성값 변경
+////////// 타입
 type PreprocessHtmlType = {
   articleFile: ArticleFileType;
   articlePath: ArticlePathType;
@@ -118,6 +122,7 @@ type PreprocessHtmlType = {
   mediaBaseUrl: string;
 };
 
+////////// HTML 전처리
 export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl }: PreprocessHtmlType) {
   try {
     // Cheerio로 HTML 파싱
@@ -169,195 +174,20 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////// 워드프레스 이미지 업로드
+type UploadImageToWordPressType = {
+  wpUrl: string;
+  authHeader: string;
+  imageFile: Blob;
+  uploadImageFileName: string;
+};
 
-////////// 폼데이터 포맷팅(객체 -> 객체 배열)
-export function formatFormData(formData: FormData) {
-  try {
-    const articles: TistoryArticleType[] = [];
-
-    // 폼데이터 존재 여부 확인
-    if ([...formData.entries()].length === 0) {
-      throw new Error("폼데이터가 존재하지 않습니다.");
-    }
-
-    // 폼데이터 포맷팅
-    for (const [key, value] of formData.entries()) {
-      // 게시글 번호 추출
-      const articleNumber = Number(key.split("_")[1]);
-
-      // 게시글 객체 찾기
-      let article = articles.find((el) => el.articleNumber === articleNumber);
-
-      // 게시글 객체가 없다면 생성 및 배열에 추가
-      if (!article) {
-        article = {
-          articleNumber: articleNumber,
-          images: [],
-          htmlFile: null,
-        };
-
-        // 게시글 객체 배열에 추가
-        articles.push(article);
-      }
-
-      // 이미지 파일 포맷팅
-      if (key.startsWith("image_")) {
-        const imageFile = value as File;
-
-        // 게시글 객체 > 이미지 배열에 추가
-        article.images?.push(imageFile);
-      }
-
-      // HTML 파일 포맷팅
-      if (key.startsWith("html_")) {
-        const htmlFile = value as File;
-
-        // 게시글 객체 > html 파일 추가
-        article.htmlFile = htmlFile;
-      }
-    }
-
-    return articles;
-  } catch (error) {
-    throw error;
-  }
-}
-
-////////// HTML 파일 내용 추출 및 분석 함수
-// export async function extractHtmlContent(article: TistoryArticleType, blogUrl: string) {
-//   try {
-//     // HTML 파일 객체
-//     const htmlFile = article.htmlFile as File;
-//     // HTML 파일 -> 문자열로 변경
-//     const htmlString = await htmlFileToString(htmlFile);
-//     // 게시글 제목
-//     const articleTitle = extractArticleTitle(htmlFile);
-//     // 미디어 기본 주소
-//     const mediaBaseUrl = getMediaBaseUrl(blogUrl);
-
-//     // 전처리된 HTML 문자열
-//     const preprocessedHtml = preprocessHtml(article, article.articleNumber, articleTitle, htmlString, mediaBaseUrl);
-
-//     // HTML 파싱
-//     const $ = cheerio.load(preprocessedHtml);
-
-//     // 제목 추출
-//     const title = $(".title-article").text().trim() || "";
-//     // 본문 추출
-//     const content = $(".article-view").html() || "";
-//     // 작성일 추출
-//     const date = $(".date").text().trim() || "";
-
-//     // 게시글 데이터 객체 생성
-//     const articleData = {
-//       title,
-//       content,
-//       date,
-//       status: "publish",
-//     };
-
-//     return articleData;
-//   } catch (error) {
-//     throw error;
-//   }
-// }
-
-////////// 워드프레스 게시글 작성 함수 인수 타입
-// type CreateArticleType = {
-//   wpUrl: string;
-//   wpId: string;
-//   applicationPassword: string;
-//   article: TistoryArticleType;
-//   articleHtml: ArticleHtmlType;
-//   articleImages: File[];
-// };
-
-// ////////// 워드프레스 게시글 작성 함수
-// export async function createArticle({
-//   wpId,
-//   applicationPassword,
-//   wpUrl,
-//   article,
-//   articleHtml,
-//   articleImages,
-// }: CreateArticleType) {
-//   try {
-//     // 사용자 이름과 애플리케이션 비밀번호로 Basic 인증 헤더 생성
-//     const username = wpId;
-//     // 애플리케이션 비밀번호 추출
-//     const appPassword = applicationPassword;
-//     // Basic 인증 헤더 생성
-//     const basicAuth = "Basic " + Buffer.from(`${username}:${appPassword}`).toString("base64");
-
-//     // 요청 바디 설정
-//     const axiosBody = articleHtml;
-
-//     // 요청 헤더 설정
-//     const axiosConfig = {
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: basicAuth,
-//       },
-//     };
-
-//     // 게시글 업로드
-//     const response = await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
-
-//     // 이미지 업로드 처리
-//     if (articleImages && articleImages.length > 0) {
-//       await Promise.all(
-//         articleImages.map(async (image, index) => {
-//           const uploadImageFileName = `${article.articleNumber}_${index}.${image.type.split("/")[1]}`;
-//           return await uploadImageToWordPress(wpUrl, basicAuth, image, uploadImageFileName);
-//         })
-//       );
-//     }
-//     return response.data; // 생성된 글 정보 반환
-//   } catch (error) {
-//     console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
-//     throw error;
-//   }
-// }
-
-//////////////////////////////////////////////////////////////////////////////// 임시 //////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-
-////////// 워드프레스 이미지 업로드 함수
-export async function uploadImageToWordPress(
-  wpUrl: string,
-  authHeader: string,
-  imageFile: File,
-  uploadImageFileName: string
-) {
+export async function uploadImageToWordPress({
+  wpUrl,
+  authHeader,
+  imageFile,
+  uploadImageFileName,
+}: UploadImageToWordPressType) {
   try {
     // 이미지 파일 -> 바이너리 데이터
     const arrayBuffer = await imageFile.arrayBuffer();
@@ -402,22 +232,6 @@ export async function htmlFileToString(htmlFile: Blob) {
     const htmlString = textDecoder.decode(arrayBuffer);
 
     return htmlString;
-  } catch (error) {
-    throw error;
-  }
-}
-
-////////// 게시글 제목 추출
-export function extractArticleTitle(htmlFile: Blob) {
-  try {
-    // HTML 파일 이름
-    const htmlFileName = htmlFile.name; // 예: '티스토리 데이터 압축파일/15/15-다이소-집게핀-머리집게-핀-구입-사용-후기.html'
-    // 파일 이름 분리
-    const parts = htmlFileName.split(".")[0].split("-"); // ['15', '다이소', '집게핀', '머리집게', '핀', '구입', '사용', '후기']
-    // 제목 추출
-    const articleTitle = parts.slice(1).join("-"); // '집게핀-머리집게-핀-구입-사용-후기'
-
-    return articleTitle;
   } catch (error) {
     throw error;
   }
@@ -469,4 +283,58 @@ export function changeImageFileExtensionBySize(fileSize: number) {
   }
 
   return extension;
+}
+
+////////////////////////////////////////////////////////////////////// DEPRECATED //////////////////////////////////////////////////////////////////////
+////////// DEPRECATED : 폼데이터 포맷팅(객체 -> 객체 배열)
+export function formatFormData(formData: FormData) {
+  try {
+    const articles: TistoryArticleType[] = [];
+
+    // 폼데이터 존재 여부 확인
+    if ([...formData.entries()].length === 0) {
+      throw new Error("폼데이터가 존재하지 않습니다.");
+    }
+
+    // 폼데이터 포맷팅
+    for (const [key, value] of formData.entries()) {
+      // 게시글 번호 추출
+      const articleNumber = Number(key.split("_")[1]);
+
+      // 게시글 객체 찾기
+      let article = articles.find((el) => el.articleNumber === articleNumber);
+
+      // 게시글 객체가 없다면 생성 및 배열에 추가
+      if (!article) {
+        article = {
+          articleNumber: articleNumber,
+          images: [],
+          htmlFile: null,
+        };
+
+        // 게시글 객체 배열에 추가
+        articles.push(article);
+      }
+
+      // 이미지 파일 포맷팅
+      if (key.startsWith("image_")) {
+        const imageFile = value as File;
+
+        // 게시글 객체 > 이미지 배열에 추가
+        article.images?.push(imageFile);
+      }
+
+      // HTML 파일 포맷팅
+      if (key.startsWith("html_")) {
+        const htmlFile = value as File;
+
+        // 게시글 객체 > html 파일 추가
+        article.htmlFile = htmlFile;
+      }
+    }
+
+    return articles;
+  } catch (error) {
+    throw error;
+  }
 }
