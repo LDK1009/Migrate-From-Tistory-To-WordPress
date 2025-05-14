@@ -1,4 +1,6 @@
 import { supabase } from "@/app/api/supabaseServer";
+import { supabase as supabaseClient } from "@/lib/supabaseClient";
+import { decodeFromBase64 } from "@/utils/base64";
 
 ////////// READ : 파일 목록 가져오기
 export type ArticlePathListType = {
@@ -10,7 +12,7 @@ export type ArticlePathListType = {
 export async function readArticlesPathList(path: string) {
   try {
     // 경로를 매개변수로 받아 유연하게 사용
-    const { data: articlePathListData } = await supabase.storage.from("articles").list(path);
+    const { data: articlePathListData } = await supabaseClient.storage.from("articles").list(path);
 
     if (!articlePathListData || articlePathListData.length === 0) {
       return [];
@@ -25,7 +27,14 @@ export async function readArticlesPathList(path: string) {
         const { data: imagePathListResponse } = await supabase.storage.from("articles").list(imageFolderPath);
         const { data: htmlPathResponse } = await supabase.storage.from("articles").list(htmlFilePath);
 
-        const imagePathList = imagePathListResponse?.map((item) => item.name);
+        const imagePathList = imagePathListResponse?.map((item) => {
+          const decodedName = decodeFromBase64(item.name.split("-")[0]);
+          const numbering1 = item.name.split("-")[1].split(".")[0];
+          const numbering2 = item.name.split("-")[2].split(".")[0];
+          const decodedExtension = item.name.split(".").pop();
+
+          return `${decodedName}-${numbering1}-${numbering2}.${decodedExtension}`;
+        });
         const htmlPath = htmlPathResponse?.filter((item) => item.name.endsWith(".html"));
 
         return {
