@@ -28,12 +28,12 @@ export async function readArticlesPathList(path: string) {
         const { data: htmlPathResponse } = await supabase.storage.from("articles").list(htmlFilePath);
 
         const imagePathList = imagePathListResponse?.map((item) => {
-          const decodedName = decodeFromBase64(item.name.split("-")[0]);
+          const decodedFileName = decodeFromBase64(item.name.split(".")[0]);
           const numbering1 = item.name.split("-")[1].split(".")[0];
           const numbering2 = item.name.split("-")[2].split(".")[0];
           const decodedExtension = item.name.split(".").pop();
 
-          return `${decodedName}-${numbering1}-${numbering2}.${decodedExtension}`;
+          return `${decodedFileName}.${decodedExtension}`;
         });
         const htmlPath = htmlPathResponse?.filter((item) => item.name.endsWith(".html"));
 
