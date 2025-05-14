@@ -1,7 +1,7 @@
 import { TistoryArticleType } from "@/types/tistory";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { ArticleFileType, ArticlePathType } from "../(types)/ArticleType";
+import { ArticleFileType, ArticlePathType } from "../(types)/articleType";
 import sharp from "sharp";
 
 ////////// 타입
@@ -18,6 +18,11 @@ type CreateArticleType = {
 ////////// 워드프레스 게시글 작성
 export async function createWordPressArticle({ wpInfo, articleFile, articlePath }: CreateArticleType) {
   try {
+    // HTML 파일 존재 여부 확인
+    if (!articleFile.htmlFile) {
+      throw new Error("HTML 파일이 존재하지 않습니다.");
+    }
+
     // 워드프레스 정보 비구조화
     const { wpId, wpApplicationPw, wpUrl } = wpInfo;
 
