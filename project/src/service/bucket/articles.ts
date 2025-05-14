@@ -61,3 +61,9 @@ export async function uploadFile(bucketName: string, filePath: string, file: Fil
 
   return response;
 }
+
+export async function emptyBucket(wpId: string) {
+  const response = await supabase.storage.from("articles").remove([`${wpId}`]);
+
+  return response;
+}

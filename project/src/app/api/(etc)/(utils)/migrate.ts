@@ -42,22 +42,34 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
     // 게시글 업로드
     await axios.post(`${wpUrl}/wp-json/wp/v2/posts`, axiosBody, axiosConfig);
 
-    // 이미지 업로드 처리
-    if (imageFileList && imageFileList.length > 0) {
-      await Promise.all(
-        imageFileList.map(async (imageFile, index) => {
-          const uploadImageFileName = imagePathList[index];
-          console.log(uploadImageFileName);
-
-          return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile, uploadImageFileName });
-        })
-      );
+    if (!imageFileList || imageFileList.length === 0) {
+      return {
+        data: {
+          article: axiosBody,
+          image: [],
+        },
+        error: null,
+      };
     }
 
-    return axiosBody; // 생성된 글 정보 반환
+    // 이미지 업로드 처리
+    const imageUploadResult = await Promise.all(
+      imageFileList.map(async (imageFile, index) => {
+        const uploadImageFileName = imagePathList[index];
+
+        return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile, uploadImageFileName });
+      })
+    );
+
+    return {
+      data: {
+        article: axiosBody,
+        image: imageUploadResult,
+      },
+      error: null,
+    }; // 생성된 글 정보 반환
   } catch (error) {
-    console.error("createArticle() : 워드프레스 게시글 작성 중 오류");
-    console.log(error);
+    console.error("createWordPressArticle() : 워드프레스 게시글 작성 중 오류");
     throw error;
   }
 }
@@ -125,6 +137,9 @@ type PreprocessHtmlType = {
 ////////// HTML 전처리
 export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBaseUrl }: PreprocessHtmlType) {
   try {
+    // 이미지 경로 리스트
+    const imagePathList = articlePath.imagePathList;
+
     // Cheerio로 HTML 파싱
     const $ = cheerio.load(htmlString);
 
@@ -133,19 +148,17 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
     const images =
       $("img")
         .map((idx, el) => {
-          // 이미지 경로 리스트
-          const imagePathList = articlePath.imagePathList;
-
           // HTML내 이미지 태그의 src 값(확장자 X)
           const originSrc = $(el)?.attr("src")?.split("/").pop()?.split(".")[0];
 
           // 매칭되는 이미지 파일 경로(확장자 O)
-          const matchingPath = imagePathList.filter((el) => el.split("-")[0] === originSrc)[0];
+          const matchingTryPath = imagePathList.filter((el) => el.split("-")[0] === originSrc)[0];
+          const matchingPath = matchingTryPath ? matchingTryPath : imagePathList[idx];
 
           // 매칭되는 이미지 파일 인덱스
           const matchingPathFileIndex = imagePathList.findIndex((path) => path === matchingPath);
 
-          // 매칭되는 이미지 파일 객체
+          // 매칭되는 이미지 파일 객체(매칭되지 않았다면 이미지 태그가 나타난 인덱스의 이미지 파일 선택)
           const matchingImageFile = articleFile.imageFileList[matchingPathFileIndex];
 
           // 기존 파일 확장자
@@ -156,6 +169,8 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
 
           // 새로 삽입할 이미지 파일 경로
           const newPath = `${matchingPath.split(".")[0]}.${extension}`;
+
+          console.log("newPath : ", newPath);
 
           // src 변경
           $(el)?.attr("src", `${mediaBaseUrl}/${newPath}`);
@@ -170,6 +185,7 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
 
     return $.html();
   } catch (error) {
+    console.error("preprocessHtml() : HTML 전처리 중 오류", error);
     throw error;
   }
 }
@@ -277,7 +293,7 @@ export function changeImageFileExtensionBySize(fileSize: number) {
   const fileSizeMb = Number((fileSize / Math.pow(1024, 2)).toFixed(2));
 
   if (fileSizeMb && fileSizeMb > 1) {
-    extension = "jpeg";
+    extension = "jpg";
   } else {
     extension = "png";
   }

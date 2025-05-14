@@ -22,11 +22,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 게시물 파일 업로드
-    await createWordPressArticle({
-      wpInfo: wpInfo,
-      articlePath: articlesPathList[0],
-      articleFile: articleFileList[0] as ArticleFileType,
-    });
+    await Promise.all(
+      articleFileList.map(async (articleFile, idx) => {
+        await createWordPressArticle({
+          wpInfo: wpInfo,
+          articlePath: articlesPathList[idx],
+          articleFile: articleFile as ArticleFileType,
+        });
+      })
+    );
 
     return NextResponse.json(true, { status: 200 });
   } catch (error) {
