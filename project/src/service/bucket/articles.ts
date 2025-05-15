@@ -1,6 +1,6 @@
 import { TistoryArticleType } from "@/types/tistory";
 import { supabase } from "../../lib/supabaseClient";
-import { decodeFromBase64, encodeToBase64 } from "@/utils/base64";
+import { encodeToBase64 } from "@/utils/base64";
 
 ////////// CREATE : 게시물 업로드
 export async function createArticle(articleNumber: number, article: TistoryArticleType, folderName: string) {
@@ -45,9 +45,6 @@ export async function createArticle(articleNumber: number, article: TistoryArtic
     return { data: null, error: error };
   }
 }
-
-
-
 
 ////////// CREATE : 게시물 리스트 업로드
 export async function createArticleList(wpId: string, articleList: TistoryArticleType[]) {
@@ -164,51 +161,7 @@ export async function readArticlesPathList(wpId: string) {
 
     const articlesPathList = articlePathListResponseData.map((el) => el.name);
 
-    // 모든 이미지 폴더와 HTML 파일 경로를 한 번에 요청하기 위한 배치 처리
-    const imageFolderPaths = articlesPathList.map((articlePath) => `${wpId}/${articlePath}/img`);
-    const htmlFilePaths = articlesPathList.map((articlePath) => `${wpId}/${articlePath}`);
-
-    // 병렬로 모든 이미지 폴더와 HTML 파일 목록 가져오기
-    const [imagePathsResponses, htmlPathsResponses] = await Promise.all([
-      Promise.all(imageFolderPaths.map((path) => supabase.storage.from("articles").list(path))),
-      Promise.all(htmlFilePaths.map((path) => supabase.storage.from("articles").list(path))),
-    ]);
-
-    // 결과 매핑
-    const result = articlesPathList.map((articlePath, index) => {
-      const imagePathListResponseData = imagePathsResponses[index].data;
-      const htmlPathListResponseData = htmlPathsResponses[index].data;
-
-      // 이미지 파일 경로 목록
-      let imagePathList: string[] = [];
-
-      // 예외처리 : 이미지 파일 경로 목록이 없거나 빈 배열이라면 빈 배열 반환
-      if (imagePathListResponseData && imagePathListResponseData.length > 0) {
-        imagePathList = imagePathListResponseData.map((item) => {
-          const decodedFileName = decodeFromBase64(item.name.split(".")[0]);
-          const decodedExtension = item.name.split(".").pop();
-          return `${decodedFileName}.${decodedExtension}`;
-        });
-      }
-
-      // HTML 파일 경로
-      let htmlPathList = null;
-
-      // 예외처리 : HTML 파일 경로가 없거나 빈 배열이라면 null 반환
-      if (htmlPathListResponseData && htmlPathListResponseData.length > 0) {
-        const htmlFiles = htmlPathListResponseData.filter((item) => item.name.endsWith(".html"));
-        if (htmlFiles.length > 0) {
-          htmlPathList = htmlFiles[0].name;
-        }
-      }
-
-      // 게시물 경로 반환
-      return {
-        articlePath,
-        imagePathList,
-        htmlPathList,
-      };
-    });
+    const result = articlesPathList.sort((a, b) => Number(a.split("-")[1]) - Number(b.split("-")[1]));
 
     return { data: result, error: null };
   } catch (error) {
