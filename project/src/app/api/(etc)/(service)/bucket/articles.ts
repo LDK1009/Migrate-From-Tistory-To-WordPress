@@ -80,34 +80,50 @@ export async function readArticlePathObject(wpId: string, articlePath: string) {
     let imagePathList: string[] | [];
     let htmlPath: string | null;
 
-    // 모든 이미지 폴더와 HTML 파일 경로를 한 번에 요청하기 위한 배치 처리
+    // wpId > article > img 하위 경로 가져오기
     const { data: imagePathListResponseData } = await supabaseClient.storage
       .from("articles")
       .list(`${wpId}/${articlePath}/img`);
-    const formattedImagePathListResponseData = imagePathListResponseData?.map((item) => item.name);
 
-    const { data: htmlPathResponseData } = await supabaseClient.storage.from("articles").list(`${wpId}/${articlePath}`);
+    // 1. 경로 목록에서 이름만 추출
+    // 2. base64 -> 문자열 디코딩
+    const formattedImagePathListResponseData = imagePathListResponseData?.map((item) => {
+      const decodedFileName = decodeFromBase64(item.name.split(".")[0]);
+      const decodedExtension = item.name.split(".").pop();
+      return `${decodedFileName}.${decodedExtension}`;
+    });
 
-    const formattedHtmlPathResponseData = htmlPathResponseData?.filter((item) => item.name.endsWith(".html"))[0].name;
-
+    // 예외처리 : 이미지 파일 경로 목록이 없거나 빈 배열이라면 빈 배열 넣기
     if (!Array.isArray(formattedImagePathListResponseData) || formattedImagePathListResponseData.length === 0) {
       imagePathList = [];
-    } else {
+    }
+    // 이미지 파일 경로 담기
+    else {
       imagePathList = formattedImagePathListResponseData;
     }
 
+    // wpId > article 하위 경로 가져오기
+    const { data: htmlPathResponseData } = await supabaseClient.storage.from("articles").list(`${wpId}/${articlePath}`);
+
+    // 1. 경로 목록에서 이름만 추출
+    const formattedHtmlPathResponseData = htmlPathResponseData?.filter((item) => item.name.endsWith(".html"))[0].name;
+
+    // 예외처리 : HTML 파일 경로가 없거나 빈 배열이라면 null 넣기
     if (!formattedHtmlPathResponseData) {
       htmlPath = null;
-    } else {
+    }
+    // HTML 파일 경로 담기
+    else {
       htmlPath = formattedHtmlPathResponseData;
     }
 
+    // 반환값
     const result = {
       imagePathList,
       htmlPath,
     };
 
-    // 게시물 경로 반환
+    // 반환
     return { data: result, error: null };
   } catch (error) {
     return { data: null, error: error };
@@ -220,7 +236,7 @@ export async function readDownloadArticle(wpId: string, articlePath: string, art
       htmlFile = null;
     } else {
       const { data, error } = await coreDownloadFile("articles", `${basePath}/${htmlPath}`);
-      
+
       if (error) {
         return null;
       }
