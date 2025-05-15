@@ -61,50 +61,40 @@ export async function createArticleList(wpId: string, articleList: TistoryArticl
   }
 }
 
-////////// CORE : 파일 업로드
+export type ArticlePathListType = {
+  articlePath: string;
+  imagePathList: string[] | [];
+  htmlPathList: string | null;
+};
 
-export async function uploadFile(bucketName: string, filePath: string, file: File) {
-  const response = await supabase.storage.from(bucketName).upload(filePath, file, {
-    upsert: true, // 같은 경로에 파일이 있으면 덮어쓰기
-  });
-
-  return response;
-}
-
-export async function emptyBucket(wpId: string) {
+////////// READ : 게시물 경로 리스트 가져오기
+export async function readArticlesPathList(wpId: string) {
   try {
-    const articlesPathList = await readWpIdBucketPathList(wpId);
+    // 경로를 매개변수로 받아 유연하게 사용
+    const { data: articlePathListResponseData } = await supabase.storage.from("articles").list(wpId);
 
-    await Promise.all(
-      articlesPathList.map((article) => {
-        const { articlePath } = article;
-        const { imagePathList, htmlPathList } = article;
+    // 예외처리 : 경로 데이터가 없거나 빈 배열이라면 빈 배열 반환
+    if (!articlePathListResponseData || articlePathListResponseData.length === 0) {
+      return { data: [], error: null };
+    }
 
-        // 이미지 삭제
-        imagePathList.map(async (path) => {
-          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/img/${path}`]);
-        });
+    const articlesPathList = articlePathListResponseData.map((el) => el.name);
 
-        // html 삭제
-        htmlPathList.map(async (path) => {
-          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/${path}`]);
-        });
-      })
-    );
+    const result = articlesPathList.sort((a, b) => Number(a.split("-")[1]) - Number(b.split("-")[1]));
 
-    return { data: null, error: null };
+    return { data: result, error: null };
   } catch (error) {
     return { data: null, error: error };
   }
 }
 
-////////// READ : 유저의 버킷 경로 가져오기
 export type ReadWpIdBucketPathListReturnType = {
   articlePath: string;
   imagePathList: string[];
   htmlPathList: string[];
 };
 
+////////// READ : 유저의 버킷 경로 가져오기
 export async function readWpIdBucketPathList(path: string): Promise<ReadWpIdBucketPathListReturnType[]> {
   try {
     // 경로를 매개변수로 받아 유연하게 사용
@@ -142,29 +132,39 @@ export async function readWpIdBucketPathList(path: string): Promise<ReadWpIdBuck
   }
 }
 
-export type ArticlePathListType = {
-  articlePath: string;
-  imagePathList: string[] | [];
-  htmlPathList: string | null;
-};
-
-////////// READ : 파일 목록 가져오기
-export async function readArticlesPathList(wpId: string) {
+////////// DELETE : 버킷 비우기
+export async function emptyBucket(wpId: string) {
   try {
-    // 경로를 매개변수로 받아 유연하게 사용
-    const { data: articlePathListResponseData } = await supabase.storage.from("articles").list(wpId);
+    const articlesPathList = await readWpIdBucketPathList(wpId);
 
-    // 예외처리 : 경로 데이터가 없거나 빈 배열이라면 빈 배열 반환
-    if (!articlePathListResponseData || articlePathListResponseData.length === 0) {
-      return { data: [], error: null };
-    }
+    const result = await Promise.allSettled(
+      articlesPathList.map((article) => {
+        const { articlePath } = article;
+        const { imagePathList, htmlPathList } = article;
 
-    const articlesPathList = articlePathListResponseData.map((el) => el.name);
+        // 이미지 삭제
+        imagePathList.map(async (path) => {
+          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/img/${path}`]);
+        });
 
-    const result = articlesPathList.sort((a, b) => Number(a.split("-")[1]) - Number(b.split("-")[1]));
+        // html 삭제
+        htmlPathList.map(async (path) => {
+          await supabase.storage.from("articles").remove([`${wpId}/${articlePath}/${path}`]);
+        });
+      })
+    );
 
     return { data: result, error: null };
   } catch (error) {
     return { data: null, error: error };
   }
+}
+
+////////// CORE : 파일 업로드
+export async function uploadFile(bucketName: string, filePath: string, file: File) {
+  const response = await supabase.storage.from(bucketName).upload(filePath, file, {
+    upsert: true, // 같은 경로에 파일이 있으면 덮어쓰기
+  });
+
+  return response;
 }

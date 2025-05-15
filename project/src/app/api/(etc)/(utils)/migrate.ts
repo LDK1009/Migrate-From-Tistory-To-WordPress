@@ -50,6 +50,8 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
 
     // 이미지 파일 리스트 존재 여부 확인
     if (!imageFileList || imageFileList.length === 0) {
+      // 테스트 코드
+      console.log("이미지가 없어 업로드를 생략합니다.");
       return {
         data: {
           article: axiosBody,
@@ -63,8 +65,13 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
     const imageUploadResult = await Promise.allSettled(
       imageFileList.map(async (imageFile, index) => {
         const uploadImageFileName = imagePathList[index];
-        
-        return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile: imageFile as Blob, uploadImageFileName });
+
+        return await uploadImageToWordPress({
+          wpUrl,
+          authHeader: basicAuth,
+          imageFile: imageFile as Blob,
+          uploadImageFileName,
+        });
       })
     );
 
@@ -148,6 +155,8 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
   try {
     // 이미지 파일 리스트 존재 여부 확인
     if (!articlePath.imagePathList || articlePath.imagePathList.length === 0) {
+      // 테스트 코드
+      console.log("이미지가 없어 전처리를 생략합니다.");
       return htmlString;
     }
 

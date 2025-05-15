@@ -13,8 +13,8 @@ export type ArticleFileType = {
 
 // 워드프레스 게시물 타입
 export type WordPressArticleType = {
-  title : string;
-  content : string;
-  date : string;
-  status : "publish";
-}
+  title: string;
+  content: string;
+  date: string;
+  status: "publish";
+};

@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     // 게시물 파일 가져오기
     const articleFileObject = await readDownloadArticle(wpId, articlePath, articlePathObject);
 
-    // 게시물 파일 업로드
+    // 워드프레스 게시물 업로드
     const { error: createWordPressArticleError } = await createWordPressArticle({
       wpInfo: wpInfo,
       articlePath: {
@@ -41,8 +41,15 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("========== END : [POST] api/migrate ==========");
-    return NextResponse.json(true, { status: 200 });
+    return NextResponse.json(
+      {
+        success: true,
+        articlePath: articlePath,
+      },
+      { status: 200 }
+    );
   } catch (error) {
+    console.log(error);
     return NextResponse.json(error, { status: 500 });
   }
 }

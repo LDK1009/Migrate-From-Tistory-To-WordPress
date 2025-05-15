@@ -1,11 +1,11 @@
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState, useEffect } from "react";
-import { closeSnackbar, enqueueSnackbar } from "notistack";
+import { enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
-import { createArticleList, emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
+import { emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
-import api from "@/lib/apiClient";
+import { createWordpressArticleList } from "@/service/api/migrate";
 
 const InputSection = () => {
   //////////////////////////////////////// 상태 ////////////////////////////////////////
@@ -70,66 +70,57 @@ const InputSection = () => {
 
   ////////// 마이그레이션 버튼 클릭
   async function handleMoveArticles() {
-    // 마이그레이션 상태 설정
-    setIsMigrating(true);
+    try {
+      // 마이그레이션 조건 확인
+      migrateCheck();
 
-    // 마이그레이션 조건 확인
-    if (!migrateCheck()) {
-      return;
+      // 마이그레이션 시작
+      setIsMigrating(true);
+
+      // // 파일 업로드
+      // const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+
+      // // 파일 업로드 실패
+      // if (createArticleError) {
+      //   throw new Error("파일 업로드 실패");
+      // }
+
+      // 게시물 경로 가져오기
+      const { data: articlesPathList, error: readArticlesPathListError } = await readArticlesPathList(wpId);
+
+      if (readArticlesPathListError) {
+        throw new Error("게시물 경로 가져오기 실패");
+      }
+
+      // 워드프레스 게시물 생성
+      const { error: createWordpressArticleListError } = await createWordpressArticleList({
+        wpInfo: { wpId, wpApplicationPw, wpUrl },
+        articlePathList: articlesPathList as string[],
+      });
+
+      if (createWordpressArticleListError) {
+        throw new Error("워드프레스 게시물 생성 실패");
+      }
+
+      // 마이그레이션 상태 초기화
+      setIsMigrating(false);
+    } catch (error) {
+      enqueueSnackbar((error as Error).message, { variant: "error" });
     }
-
-    // 파일 업로드
-    // const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
-
-    // if (createArticleError) {
-    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
-    //   return;
-    // }
-
-    // 게시물 경로 가져오기
-    const { data: articlesPathList, error: readArticlesPathListError } = await readArticlesPathList(wpId);
-
-    if (readArticlesPathListError) {
-      enqueueSnackbar("게시물 경로 가져오기 실패", { variant: "error" });
-      return;
-    }
-
-    console.log(articlesPathList);
-
-    // API 요청
-    await api.post("/migrate", { wpId, wpApplicationPw, wpUrl, articlePath: "article-0" });
-
-    // if (migrateApiResponse.data.error) {
-    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
-    //   return;
-    // }
-
-    // 티스토리 데이터 가져오기 실패
-    // 티스토리 데이터 가져오기 실패
-    // if (createArticleError) {
-    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
-    //   return;
-    // }
-
-    // 마이그레이션 상태 초기화
-    setIsMigrating(false);
   }
 
   ////////// 마이그레이션 조건 확인
   function migrateCheck() {
     if (!wpUrl || !wpId || !wpApplicationPw) {
-      enqueueSnackbar("모든 정보를 입력해주세요.", { variant: "error" });
-      return false;
+      throw new Error("모든 정보를 입력해주세요.");
     }
 
     if (urlError) {
-      enqueueSnackbar("올바른 워드프레스 URL을 입력해주세요.", { variant: "error" });
-      return false;
+      throw new Error("올바른 워드프레스 URL을 입력해주세요.");
     }
 
     if (!tistoryArticles || tistoryArticles.length === 0) {
-      enqueueSnackbar("티스토리 백업 폴더에 데이터가 없습니다.", { variant: "error" });
-      return false;
+      throw new Error("티스토리 백업 폴더에 데이터가 없습니다.");
     }
 
     return true;
