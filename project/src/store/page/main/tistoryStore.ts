@@ -58,5 +58,8 @@ function formatFiles(files: FileList) {
     }
   }
 
+  // 게시글 번호 기준으로 오름차순 정렬
+  articles.sort((a, b) => a.articleNumber - b.articleNumber);
+
   return articles;
 }
