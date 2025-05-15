@@ -2,13 +2,13 @@
 export type ArticlePathType = {
   articlePath: string;
   imagePathList: string[];
-  htmlPathList: string;
+  htmlPath: string;
 };
 
 // 게시물 파일 타입
 export type ArticleFileType = {
-  imageFileList: Blob[];
-  htmlFile: Blob;
+  imageFileList: (Blob | null)[];
+  htmlFile: Blob | null;
 };
 
 // 워드프레스 게시물 타입

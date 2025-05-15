@@ -3,7 +3,7 @@ import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState, useEffect } from "react";
 import { closeSnackbar, enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
-import { createArticleList, emptyBucket } from "@/service/bucket/articles";
+import { createArticleList, emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
 import api from "@/lib/apiClient";
 
@@ -79,27 +79,37 @@ const InputSection = () => {
     }
 
     // 파일 업로드
-    const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+    // const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
 
-    if (createArticleError) {
-      enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+    // if (createArticleError) {
+    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+    //   return;
+    // }
+
+    // 게시물 경로 가져오기
+    const { data: articlesPathList, error: readArticlesPathListError } = await readArticlesPathList(wpId);
+
+    if (readArticlesPathListError) {
+      enqueueSnackbar("게시물 경로 가져오기 실패", { variant: "error" });
       return;
     }
+
+    console.log(articlesPathList);
 
     // API 요청
-    const migrateApiResponse = await api.post("/migrate", { wpId, wpApplicationPw, wpUrl });
+    await api.post("/migrate", { wpId, wpApplicationPw, wpUrl, articlePath: "article-0" });
 
-    if (migrateApiResponse.data.error) {
-      enqueueSnackbar("마이그레이션 실패", { variant: "error" });
-      return;
-    }
+    // if (migrateApiResponse.data.error) {
+    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+    //   return;
+    // }
 
     // 티스토리 데이터 가져오기 실패
     // 티스토리 데이터 가져오기 실패
-    if (createArticleError) {
-      enqueueSnackbar("마이그레이션 실패", { variant: "error" });
-      return;
-    }
+    // if (createArticleError) {
+    //   enqueueSnackbar("마이그레이션 실패", { variant: "error" });
+    //   return;
+    // }
 
     // 마이그레이션 상태 초기화
     setIsMigrating(false);

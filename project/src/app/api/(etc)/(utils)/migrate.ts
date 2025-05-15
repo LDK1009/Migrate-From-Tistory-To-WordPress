@@ -60,11 +60,11 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
     }
 
     // 이미지 업로드 처리
-    const imageUploadResult = await Promise.all(
+    const imageUploadResult = await Promise.allSettled(
       imageFileList.map(async (imageFile, index) => {
         const uploadImageFileName = imagePathList[index];
-
-        return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile, uploadImageFileName });
+        
+        return await uploadImageToWordPress({ wpUrl, authHeader: basicAuth, imageFile: imageFile as Blob, uploadImageFileName });
       })
     );
 
@@ -76,8 +76,10 @@ export async function createWordPressArticle({ wpInfo, articleFile, articlePath 
       error: null,
     }; // 생성된 글 정보 반환
   } catch (error) {
-    console.error("createWordPressArticle() : 워드프레스 게시글 작성 중 오류");
-    throw error;
+    return {
+      data: null,
+      error: error,
+    };
   }
 }
 
@@ -99,7 +101,7 @@ export async function extractHtmlContent({ wpInfo, articleFile, articlePath }: E
     const htmlFile = articleFile.htmlFile;
 
     // HTML 파일 -> 문자열로 변경
-    const htmlString = await htmlFileToString(htmlFile);
+    const htmlString = await htmlFileToString(htmlFile as Blob);
 
     // HTML 파일에서 제목 추출
     const title = cheerio.load(htmlString)(".title-article").text().trim() || "";
@@ -177,7 +179,7 @@ export function preprocessHtml({ articleFile, articlePath, htmlString, mediaBase
           // const matchingImageFileExtension = matchingImageFile.type.split("/")[1];
 
           // 이미지 파일 크기 체크 및 확장자 변경
-          const extension = changeImageFileExtensionBySize(matchingImageFile.size);
+          const extension = changeImageFileExtensionBySize(matchingImageFile?.size || 0);
 
           // 새로 삽입할 이미지 파일 경로
           const newPath = `${matchingPath.split(".")[0]}.${extension}`;
