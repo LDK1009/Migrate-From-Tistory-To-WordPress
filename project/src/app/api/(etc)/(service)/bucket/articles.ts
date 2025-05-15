@@ -218,7 +218,11 @@ export async function readDownloadArticle(wpId: string, articlePath: string, art
       const imageFileListPromise = await Promise.allSettled(
         // 이미지 파일 다운로드
         imagePathList.map(async (path) => {
-          const { data, error } = await coreDownloadFile("articles", `${basePath}/img/${path}`);
+          const encodedPath = encodeToBase64(path.split(".")[0]);
+          const extension = path.split(".").pop();
+          const imagePath = `${encodedPath}.${extension}`;
+
+          const { data, error } = await coreDownloadFile("articles", `${basePath}/img/${imagePath}`);
 
           if (error) {
             return null;
