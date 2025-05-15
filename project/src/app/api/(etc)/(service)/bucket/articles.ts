@@ -105,7 +105,9 @@ export async function readDownloadArticles(wpId: string, articlePathList: Articl
         let htmlFile;
 
         if (htmlPathList) {
-          htmlFile = await coreDownloadFile("articles", `${basePath}/${htmlPathList}`);
+          const { data: downloadedHtmlFile } = await coreDownloadFile("articles", `${basePath}/${htmlPathList}`);
+          htmlFile = downloadedHtmlFile;
+          return htmlFile;
         } else {
           htmlFile = null;
         }
