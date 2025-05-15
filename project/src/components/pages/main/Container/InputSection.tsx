@@ -3,7 +3,7 @@ import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState, useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
-import { emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
+import { createArticleList, emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
 import { createWordpressArticleList } from "@/service/api/migrate";
 
@@ -77,13 +77,13 @@ const InputSection = () => {
       // 마이그레이션 시작
       setIsMigrating(true);
 
-      // // 파일 업로드
-      // const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+      // 파일 업로드
+      const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
 
-      // // 파일 업로드 실패
-      // if (createArticleError) {
-      //   throw new Error("파일 업로드 실패");
-      // }
+      // 파일 업로드 실패
+      if (createArticleError) {
+        throw new Error("파일 업로드 실패");
+      }
 
       // 게시물 경로 가져오기
       const { data: articlesPathList, error: readArticlesPathListError } = await readArticlesPathList(wpId);
