@@ -1,7 +1,7 @@
 {
-  "name": "Uni-Q",
-  "short_name": "Uni-Q",
-  "description": "대학교 학과별 면접 질문 플랫폼",
+  "name": "Tistory-To-Wordpress",
+  "short_name": "Tistory-To-Wordpress",
+  "description": "티스토리의 모든 게시물을 워드프레스로 마이그레이션하세요!",
   "theme_color": "#ffffff",
   "background_color": "#ffffff",
   "display": "standalone",

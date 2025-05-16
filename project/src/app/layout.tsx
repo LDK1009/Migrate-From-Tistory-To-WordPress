@@ -10,11 +10,11 @@ import Loading from "@/components/common/Loading";
 export const metadata: Metadata = {
   manifest: "/manifest.json",
   title: `${templateInfo.name}`,
-  description: "오늘, 너를 위한 한 장의 페이지",
-  keywords: "생일, 기념일, 감성, 선물, 메시지, 카드, 템플릿, 나만의 페이지",
+  description: "티스토리의 모든 게시물을 워드프레스로 마이그레이션하세요!",
+  keywords: "티스토리, 워드프레스, 마이그레이션, 게시물, 마이그레이션, 티스토리 마이그레이션, 워드프레스 마이그레이션",
   openGraph: {
     title: `${templateInfo.name}`,
-    description: "오늘, 너를 위한 한 장의 페이지",
+    description: "티스토리의 모든 게시물을 워드프레스로 마이그레이션하세요!",
     url: `${templateInfo.link}`,
     images: [{ url: "/img/og.png", width: 1200, height: 630, alt: "og-image" }],
     type: "website",
