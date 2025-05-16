@@ -40,14 +40,14 @@ declare module "@mui/material/styles" {
 export const muiTheme = createTheme({
   palette: {
     primary: {
-      main: "#4CAF50",   // 메인그린 (성장, 협력, 신뢰)
-      light: "#81C784",
-      dark: "#388E3C",
+      light: "#E3F2FD",
+      main: "#2196F3",
+      dark: "#1565C0",
     },
     secondary: {
-      main: "#FFC107",   // 서브옐로우 (에너지, 교류, 활성화)
-      light: "#FFD54F",
-      dark: "#FFA000",
+      light: "#E0F7F1",
+      main: "#26C6DA",
+      dark: "#00838F",
     },
     error: {
       main: "#F44336",
@@ -74,7 +74,7 @@ export const muiTheme = createTheme({
       900: "#212121",
     },
     background: {
-      default: "#F9FFF9",  // 연한 민트 배경
+      default: "#ECEFF1",  // 연한 민트 배경
       paper: "#FFFFFF",
     },
     text: {
