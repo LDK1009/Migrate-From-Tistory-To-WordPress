@@ -3,7 +3,7 @@ import { TextField, Button, Typography, Box, Paper } from "@mui/material";
 import React, { useRef, useState, useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
 import TistoryArticlePreview from "./TistoryArticlePreview";
-import { createArticleList, emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
+import { createArticleList, readArticlesPathList } from "@/service/bucket/articles";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
 import { createWordpressArticleList } from "@/service/api/migrate";
 
@@ -192,16 +192,6 @@ const InputSection = () => {
       {/* 마이그레이션 버튼 */}
       <Button variant="contained" onClick={handleMoveArticles} disabled={!tistoryArticles} fullWidth>
         마이그레이션
-      </Button>
-
-      <Button
-        variant="contained"
-        onClick={async () => {
-          await emptyBucket(wpId);
-        }}
-        fullWidth
-      >
-        버킷 비우기
       </Button>
 
       {/* 티스토리 데이터 미리보기 */}
