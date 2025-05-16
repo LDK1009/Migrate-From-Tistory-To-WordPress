@@ -1,17 +1,12 @@
-import { useTistoryStore } from "@/store/page/main/tistoryStore";
-import { TextField, Button, Typography, Box, Paper } from "@mui/material";
+import { TextField, Button, Stack, styled } from "@mui/material";
 import React, { useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
-import TistoryArticlePreview from "./TistoryArticlePreview";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
+import { HelpOutline } from "@mui/icons-material";
 
 const InputSection = () => {
   //////////////////////////////////////// 상태 ////////////////////////////////////////
-
-  // 티스토리 스토어
-  const { tistoryArticles } = useTistoryStore();
-
-  // 워드프레스 스토어
+  ////////// 워드프레스 스토어
   const { wpUrl, wpId, wpApplicationPw, setWpUrl, setWpId, setWpApplicationPw, wpUrlError, setWpUrlError } =
     useWordpressStore();
 
@@ -40,9 +35,16 @@ const InputSection = () => {
     return isValid;
   };
 
+  ////////// '응용 프로그램 비밀번호 발급 방법' 버튼 클릭
+  const handleHowToGetAppPw = () => {
+    if (wpUrl) {
+      window.open(`${wpUrl}/wp-admin/profile.php`, "_blank");
+    } else {
+      enqueueSnackbar("워드프레스 URL을 입력해주세요.", { variant: "error" });
+    }
+  };
   //////////////////////////////////////// 이펙트 ////////////////////////////////////////
-
-  ////////// URL 유효성 검사 실행
+  ////////// URL 변경 시 유효성 검사
   useEffect(() => {
     isValidWpUrl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,67 +52,76 @@ const InputSection = () => {
 
   //////////////////////////////////////// 렌더링 ////////////////////////////////////////
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      {/* 폴더 선택 */}
-      <div>
-        <Typography>{tistoryArticles ? `(${tistoryArticles.length}개 파일)` : "선택된 폴더 없음"}</Typography>
-      </div>
+    <Container>
+      {/* 헤더 */}
+      <Header>
+        <HowToGetAppPwButton onClick={handleHowToGetAppPw} variant="text" startIcon={<HelpOutline />}>
+          응용 프로그램 비밀번호 발급 방법
+        </HowToGetAppPwButton>
+      </Header>
 
-      {/* 워드프레스 id 입력 */}
-      <TextField
-        label="워드프레스 아이디"
-        fullWidth
-        value={wpId}
-        onChange={(e) => setWpId(e.target.value)}
-        placeholder="https://your-wordpress-site.com"
-        sx={{ mb: 2 }}
-      />
+      {/* 입력 필드 컨테이너 */}
+      <InputContainer>
+        {/* 워드프레스 URL 입력 */}
+        <WpUrlInput
+          label="워드프레스 URL"
+          value={wpUrl}
+          onChange={(e) => setWpUrl(e.target.value)}
+          placeholder="https://your-wordpress-site.com"
+          error={wpUrlError}
+          helperText={wpUrlError ? "올바른 URL 형식이 아닙니다 (예: https://your-wordpress-site.com)" : ""}
+        />
 
-      {/* 응용 프로그램 비밀번호 입력 */}
-      <TextField
-        label="응용 프로그램 비밀번호"
-        fullWidth
-        value={wpApplicationPw}
-        onChange={(e) => setWpApplicationPw(e.target.value)}
-        placeholder="https://your-wordpress-site.com"
-        sx={{ mb: 2 }}
-      />
-      <Button
-        variant="outlined"
-        onClick={() => {
-          if (wpUrl) {
-            window.open(`${wpUrl}/wp-admin/profile.php`, "_blank");
-          } else {
-            enqueueSnackbar("워드프레스 URL을 입력해주세요.", { variant: "error" });
-          }
-        }}
-      >
-        응용 프로그램 비밀번호 발급 방법
-      </Button>
+        {/* 워드프레스 아이디 입력 */}
+        <WpIdInput
+          label="워드프레스 ID"
+          value={wpId}
+          onChange={(e) => setWpId(e.target.value)}
+          placeholder="워드프레스 ID"
+        />
 
-      {/* 워드프레스 URL 입력 */}
-      <TextField
-        label="WordPress URL"
-        fullWidth
-        value={wpUrl}
-        onChange={(e) => setWpUrl(e.target.value)}
-        placeholder="https://your-wordpress-site.com"
-        sx={{ mb: 2 }}
-        error={wpUrlError}
-        helperText={wpUrlError ? "올바른 URL 형식이 아닙니다 (예: https://your-wordpress-site.com)" : ""}
-      />
-
-      {/* 티스토리 데이터 미리보기 */}
-      {tistoryArticles && tistoryArticles?.length > 0 && (
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            가져온 게시글: {tistoryArticles.length}개
-          </Typography>
-          <TistoryArticlePreview tistoryArticles={tistoryArticles} />
-        </Box>
-      )}
-    </Paper>
+        {/* 응용 프로그램 비밀번호 입력 */}
+        <WpAppPwInput
+          label="응용 프로그램 비밀번호"
+          value={wpApplicationPw}
+          onChange={(e) => setWpApplicationPw(e.target.value)}
+          placeholder="A1B2 C3D4 E5F6 ...."
+        />
+      </InputContainer>
+    </Container>
   );
 };
 
 export default InputSection;
+
+const Container = styled(Stack)`
+  row-gap: 16px;
+`;
+
+const Header = styled(Stack)`
+  flex-direction: row;
+  justify-content: flex-end;
+`;
+
+const HowToGetAppPwButton = styled(Button)`
+  &:hover {
+    color: ${({ theme }) => theme.palette.primary.dark};
+  }
+`;
+
+const InputContainer = styled(Stack)`
+  flex-direction: row;
+  column-gap: 16px;
+`;
+
+const WpIdInput = styled(TextField)`
+  flex: 1;
+`;
+
+const WpAppPwInput = styled(TextField)`
+  flex: 1;
+`;
+
+const WpUrlInput = styled(TextField)`
+  flex: 2;
+`;
