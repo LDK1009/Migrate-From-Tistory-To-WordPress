@@ -3,6 +3,8 @@
 import { mixinContainer, mixinFlex } from "@/styles/mixins";
 import { styled, Box } from "@mui/material";
 import InputSection from "./Container/InputSection";
+import FolderSelector from "./Container/FolderSelector";
+import MigrationButton from "./Container/MigrationButton";
 //////////////////////////////////////// Component ////////////////////////////////////////
 
 /**
@@ -15,6 +17,8 @@ const MainContainer = () => {
   return (
     <Container>
       <InputSection />
+      <FolderSelector />
+      <MigrationButton />
     </Container>
   );
 };
