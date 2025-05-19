@@ -2,7 +2,8 @@ import { createWordpressArticleList } from "@/service/api/migrate";
 import { createArticleList, readArticlesPathList } from "@/service/bucket/articles";
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
-import { Button } from "@mui/material";
+import { LocalShippingRounded } from "@mui/icons-material";
+import { Box, Button, styled } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 
 const MigrationButton = () => {
@@ -61,13 +62,35 @@ const MigrationButton = () => {
     }
   }
   return (
-    <div>
+    <Container>
       {/* 마이그레이션 버튼 */}
-      <Button variant="contained" onClick={handleMoveArticles} disabled={!tistoryArticles} fullWidth>
+      <MigrateButton
+        variant="contained"
+        onClick={handleMoveArticles}
+        disabled={!tistoryArticles}
+        endIcon={<LocalShippingRounded />}
+        fullWidth
+      >
         마이그레이션
-      </Button>
-    </div>
+      </MigrateButton>
+    </Container>
   );
 };
 
 export default MigrationButton;
+
+const Container = styled(Box)`
+  width: 100%;
+`;
+
+const MigrateButton = styled(Button)`
+  width: 100%;
+  height: 60px;
+  border-radius: 16px;
+  font-size: 24px;
+  font-weight: bold;
+
+  & .MuiSvgIcon-root {
+    font-size: 32px;
+  }
+`;
