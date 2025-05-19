@@ -5,6 +5,8 @@ import { styled, Box } from "@mui/material";
 import InputSection from "./Container/InputSection";
 import FolderSelector from "./Container/FolderSelector";
 import MigrationButton from "./Container/MigrationButton";
+import MigrateStateSection from "./Container/MigrateStateSection";
+import { useMigrateStore } from "@/store/page/main/migrate";
 //////////////////////////////////////// Component ////////////////////////////////////////
 
 /**
@@ -12,13 +14,21 @@ import MigrationButton from "./Container/MigrationButton";
  * 프로젝트 소개 및 README 내용을 표시
  */
 const MainContainer = () => {
+  const { migrateState } = useMigrateStore();
+
   //////////////////////////////////////// Render ////////////////////////////////////////
 
   return (
     <Container>
-      <InputSection />
-      <FolderSelector />
-      <MigrationButton />
+      {migrateState !== "idle" ? (
+        <MigrateStateSection />
+      ) : (
+        <>
+          <InputSection />
+          <FolderSelector />
+          <MigrationButton />
+        </>
+      )}
     </Container>
   );
 };
@@ -30,8 +40,8 @@ export default MainContainer;
 // 메인 컨테이너 스타일
 const Container = styled(Box)`
   ${mixinContainer()};
-  ${mixinFlex("column")};
-  align-items: center;
+  ${mixinFlex("column", "center", "center")};
   padding-top: 40px;
   padding-bottom: 40px;
+  row-gap: 32px;
 `;
