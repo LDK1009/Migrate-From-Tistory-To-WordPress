@@ -95,6 +95,7 @@ const InputSection = () => {
 export default InputSection;
 
 const Container = styled(Stack)`
+  width: 100%;
   row-gap: 16px;
 `;
 
@@ -111,7 +112,7 @@ const HowToGetAppPwButton = styled(Button)`
 
 const InputContainer = styled(Stack)`
   flex-direction: row;
-  column-gap: 16px;
+  column-gap: 32px;
 `;
 
 const WpIdInput = styled(TextField)`
