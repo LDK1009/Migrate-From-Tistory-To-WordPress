@@ -1,5 +1,5 @@
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
-import { Stack, styled, Typography } from "@mui/material";
+import { Box, Button, Stack, styled, Typography } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 import { useRef, useState, DragEvent } from "react";
 import { shouldForwardProp } from "@/utils/mui";
@@ -76,35 +76,29 @@ const FolderSelector = () => {
 
   //////////////////////////////////////// 렌더링 ////////////////////////////////////////
   return (
-    <Container
-      onClick={openFileInput}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      $isDragging={isDragging}
-      $isFileSelected={tistoryArticles.length > 0}
-    >
-      {/* UI */}
+    <Container>
       {tistoryArticles.length > 0 ? (
-        // 폴더 선택 후 UI
-        <AfterUploadFolder>
-          <ReloadIcon />
-          <UploadFolderText variant="h5">다시 업로드하기</UploadFolderText>
-        </AfterUploadFolder>
+        // 재업로드 버튼
+        <RetryButton variant="outlined" endIcon={<ReplayRounded />} onClick={openFileInput}>
+          다시 업로드하기
+        </RetryButton>
       ) : (
-        // 폴더 선택 전 UI
-        <BeforeUploadFolder>
+        // DnD 박스
+        <DropBoxContainer
+          onClick={openFileInput}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          $isDragging={isDragging}
+        >
           <UploadFolderIcon />
           <UploadFolderText variant="h5">
             {isDragging ? "여기에 폴더를 놓으세요" : "티스토리 백업 폴더를 선택하세요"}
           </UploadFolderText>
-        </BeforeUploadFolder>
+        </DropBoxContainer>
       )}
 
-      {/* 폴더 선택 후 UI */}
-
-      {/* 숨겨진 인풋 */}
       {/* 숨겨진 인풋 */}
       <input
         type="file"
@@ -120,20 +114,31 @@ const FolderSelector = () => {
 export default FolderSelector;
 
 //////////////////////////////////////// 스타일 컴포넌트 ////////////////////////////////////////
+const Container = styled(Box)`
+  width: 100%;
+  height: 100%;
+`;
+
+const RetryButton = styled(Button)`
+  width: 100%;
+  height: 48px;
+
+  &:hover {
+    color: ${({ theme }) => theme.palette.primary.main};
+  }
+`;
+
 type ContainerProps = {
   $isDragging?: boolean;
-  $isFileSelected?: boolean;
 };
 
-const Container = styled(Stack, { shouldForwardProp })<ContainerProps>`
+const DropBoxContainer = styled(Stack, { shouldForwardProp })<ContainerProps>`
   width: 100%;
   height: 500px;
   ${mixinFlex("column", "center", "center")}
 
-  border-width: ${({ $isFileSelected }) => ($isFileSelected ? "1px" : "3px")};
-  border-style: ${({ $isFileSelected }) => ($isFileSelected ? "solid" : "dashed")};
-  border-color: ${({ theme }) => theme.palette.primary.main};
-  border-radius: 24px;
+  border: 3px dashed ${({ theme }) => theme.palette.primary.main};
+  border-radius: 16px;
 
   transition: background-color 0.3s ease;
 
@@ -144,11 +149,6 @@ const Container = styled(Stack, { shouldForwardProp })<ContainerProps>`
   }
 `;
 
-const BeforeUploadFolder = styled(Stack)`
-  ${mixinFlex("column", "center", "center")}
-  row-gap: 8px;
-`;
-
 const UploadFolderIcon = styled(DriveFolderUploadRounded)`
   width: 100px;
   height: 100px;
@@ -156,13 +156,5 @@ const UploadFolderIcon = styled(DriveFolderUploadRounded)`
 `;
 
 const UploadFolderText = styled(Typography)`
-  color: ${({ theme }) => theme.palette.primary.main};
-`;
-
-const AfterUploadFolder = styled(BeforeUploadFolder)``;
-
-const ReloadIcon = styled(ReplayRounded)`
-  width: 100px;
-  height: 100px;
   color: ${({ theme }) => theme.palette.primary.main};
 `;
