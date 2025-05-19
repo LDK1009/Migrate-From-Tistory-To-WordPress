@@ -11,8 +11,8 @@ const MigrateStateSection = () => {
     idle: "",
     fileUpload: "파일 업로드 중...",
     articleMigrate: "마이그레이션 중...",
-    success: "마이그레이션 성공",
-    error: "마이그레이션 실패",
+    success: "✅ 마이그레이션 성공",
+    error: "❌ 마이그레이션 실패",
   };
 
   function handleGoToBlog() {

@@ -1,5 +1,5 @@
 import { createWordpressArticleList } from "@/service/api/migrate";
-import { createArticleList, readArticlesPathList } from "@/service/bucket/articles";
+import { createArticleList, emptyBucket, readArticlesPathList } from "@/service/bucket/articles";
 import { useMigrateStore } from "@/store/page/main/migrate";
 import { useTistoryStore } from "@/store/page/main/tistoryStore";
 import { useWordpressStore } from "@/store/page/main/wordpressStore";
@@ -8,7 +8,7 @@ import { Box, Button, styled } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 
 const MigrationButton = () => {
-  const { tistoryArticles } = useTistoryStore();
+  const { tistoryArticles, selectedArticleIndexList } = useTistoryStore();
   const { wpUrl, wpId, wpApplicationPw, wpUrlError } = useWordpressStore();
   const { setMigrateState } = useMigrateStore();
 
@@ -37,11 +37,14 @@ const MigrationButton = () => {
       // 마이그레이션 조건 확인
       migrateCheck();
 
+      // 선택된 게시물 목록 필터링
+      const selectedArticleList = tistoryArticles.filter((_, idx) => selectedArticleIndexList.includes(idx));
+
       // 마이그레이션 상태 변경
       setMigrateState("fileUpload");
 
       // 파일 업로드
-      const { error: createArticleError } = await createArticleList(wpId, tistoryArticles);
+      const { error: createArticleError } = await createArticleList(wpId, selectedArticleList);
 
       // 파일 업로드 실패
       if (createArticleError) {
@@ -60,7 +63,7 @@ const MigrationButton = () => {
         throw new Error("게시물 경로 가져오기 실패");
       }
 
-      // 워드프레스 게시물 생성
+      // // 워드프레스 게시물 생성
       const { error: createWordpressArticleListError } = await createWordpressArticleList({
         wpInfo: { wpId, wpApplicationPw, wpUrl },
         articlePathList: articlesPathList as string[],
@@ -70,6 +73,9 @@ const MigrationButton = () => {
         setMigrateState("error");
         throw new Error("워드프레스 게시물 생성 실패");
       }
+
+      // 버킷 비우기
+      await emptyBucket(wpId);
 
       // 마이그레이션 상태 변경
       setMigrateState("success");
