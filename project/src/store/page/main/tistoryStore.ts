@@ -4,18 +4,25 @@ import { create } from "zustand";
 //////////////////////////////////////// 스토어 타입 ////////////////////////////////////////
 interface TistoryStore {
   tistoryArticles: TistoryArticleType[];
+  selectedArticleIndexList: number[];
 
   setTistoryArticles: (files: FileList) => void;
+  setSelectedArticleIndexList: (indexList: number[]) => void;
 }
 
 //////////////////////////////////////// 스토어 ////////////////////////////////////////
 export const useTistoryStore = create<TistoryStore>((set) => ({
   tistoryArticles: [],
+  selectedArticleIndexList: [],
 
+  // 액션
   // 티스토리 데이터 가져오기
   setTistoryArticles: (files: FileList) => {
     set({ tistoryArticles: formatFiles(files) });
   },
+
+  // 선택된 아티클 설정
+  setSelectedArticleIndexList: (indexList: number[]) => set({ selectedArticleIndexList: indexList }),
 }));
 
 //////////////////////////////////////// 모듈 ////////////////////////////////////////

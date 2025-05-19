@@ -7,6 +7,8 @@ import FolderSelector from "./Container/FolderSelector";
 import MigrationButton from "./Container/MigrationButton";
 import MigrateStateSection from "./Container/MigrateStateSection";
 import { useMigrateStore } from "@/store/page/main/migrate";
+import TistoryArticlePreview from "./Container/TistoryArticlePreview";
+import { useTistoryStore } from "@/store/page/main/tistoryStore";
 //////////////////////////////////////// Component ////////////////////////////////////////
 
 /**
@@ -15,6 +17,7 @@ import { useMigrateStore } from "@/store/page/main/migrate";
  */
 const MainContainer = () => {
   const { migrateState } = useMigrateStore();
+  const { tistoryArticles } = useTistoryStore();
 
   //////////////////////////////////////// Render ////////////////////////////////////////
 
@@ -26,6 +29,7 @@ const MainContainer = () => {
         <>
           <InputSection />
           <FolderSelector />
+          {tistoryArticles.length > 0 && <TistoryArticlePreview />}
           <MigrationButton />
         </>
       )}
